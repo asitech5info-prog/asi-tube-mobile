@@ -558,6 +558,26 @@
     </div>
   </div>
 
+  <!-- In-App Media Player Modal (Everything stays 100% in-app) -->
+  <div id="playerModal" class="bottom-sheet-backdrop" style="display: none;">
+    <div class="bottom-sheet-card player-modal-card">
+      <div class="bottom-sheet-drag-handle"></div>
+      <div class="modal-head">
+        <h3 id="playerModalTitle" class="modal-title">In-App Player</h3>
+        <button class="modal-close-btn" onclick="UI.closePlayerModal()" aria-label="Close">✕</button>
+      </div>
+      <div class="inapp-player-wrapper">
+        <video id="inAppVideoPlayer" class="in-app-media hidden" controls playsinline></video>
+        <audio id="inAppAudioPlayer" class="in-app-media hidden" controls></audio>
+      </div>
+      <div class="player-actions-row">
+        <button id="playerDownloadBtn" class="btn-primary" type="button">
+          <span>Save to Phone Storage</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
 

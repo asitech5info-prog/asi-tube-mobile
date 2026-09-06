@@ -1575,3 +1575,101 @@ h1, h2, h3, h4, .brand-name, .hero-title, .view-heading {
 
 /* Helper Utilities */
 .hidden { display: none !important; }
+
+/* In-App Download Success State */
+.inapp-success-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  width: 100%;
+}
+
+.inapp-check-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--success);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.inapp-success-info h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.inapp-success-info p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* In-App Media Player Modal */
+.player-modal-card {
+  max-height: 80vh;
+}
+
+.inapp-player-wrapper {
+  width: 100%;
+  margin: 12px 0 16px;
+  background: #000000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.in-app-media {
+  width: 100%;
+  max-height: 280px;
+  display: block;
+}
+
+audio.in-app-media {
+  background: var(--bg-surface);
+  padding: 10px;
+}
+
+.player-actions-row {
+  display: flex;
+  gap: 10px;
+}
+
+/* Empty Downloads Library State */
+.empty-downloads-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-muted);
+}
+
+.empty-icon-cloud {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.empty-downloads-state h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.empty-downloads-state p {
+  font-size: 0.85rem;
+  max-width: 260px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+

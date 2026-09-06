@@ -297,7 +297,7 @@ const App = {
     try {
       const result = await API.getDownload(rawUrl, quality, format, isAudio, rawTitle, directUrl);
       if (result && result.downloadUrl) {
-        modalHandler.finish(result.downloadUrl, result.filename);
+        modalHandler.finish(result.downloadUrl, result.filename, isAudio);
         this.saveDownloadHistory({
           title: rawTitle,
           url: rawUrl,
@@ -314,6 +314,54 @@ const App = {
     } catch (err) {
       console.error('Download error:', err);
       modalHandler.error(err.message || 'Download failed.');
+    }
+  },
+
+  // Save Image In-App (No external browser)
+  saveImageInApp(encodedUrl, encodedFilename) {
+    this.vibrate(20);
+    const url = decodeURIComponent(encodedUrl);
+    const filename = decodeURIComponent(encodedFilename || 'cover.jpg');
+
+    if (window.AndroidDownloader && window.AndroidDownloader.downloadFile) {
+      window.AndroidDownloader.downloadFile(url, filename, 'image/jpeg');
+      UI.showToast('Saving image to Downloads: ' + filename, 'success');
+    } else {
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', filename);
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 200);
+        UI.showToast('Image downloaded: ' + filename, 'success');
+      } catch (e) {
+        UI.showToast('Could not save image', 'error');
+      }
+    }
+  },
+
+  // Re-download History Item In-App (No external browser)
+  redownloadHistoryItem(encodedUrl, encodedFilename, isAudio) {
+    this.vibrate(25);
+    const url = decodeURIComponent(encodedUrl);
+    const filename = decodeURIComponent(encodedFilename || 'media_file.mp4');
+
+    if (window.AndroidDownloader && window.AndroidDownloader.downloadFile) {
+      window.AndroidDownloader.downloadFile(url, filename, isAudio ? 'audio/mpeg' : 'video/mp4');
+      UI.showToast('Download started: ' + filename, 'success');
+    } else {
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', filename);
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 200);
+        UI.showToast('Downloading: ' + filename, 'success');
+      } catch (e) {
+        UI.showToast('Download failed', 'error');
+      }
     }
   },
 

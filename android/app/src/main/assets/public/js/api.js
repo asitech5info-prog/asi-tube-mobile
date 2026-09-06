@@ -158,17 +158,15 @@ const API = {
 
     try {
       const initUrl = 'https://loader.to/ajax/download.php?button=1&start=1&end=1&format=' + encodeURIComponent(f) + '&url=' + encodeURIComponent(url);
-      const res = await fetch(initUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-      });
+      const res = await fetch(initUrl);
       if (!res.ok) throw new Error('Init failed');
       const data = await res.json();
       if (!data.id) throw new Error('No conversion ID');
 
       const progressUrl = data.progress_url || ('https://loader.to/ajax/progress.php?id=' + data.id);
       
-      for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 1200));
+      for (let i = 0; i < 25; i++) {
+        await new Promise(r => setTimeout(r, 1300));
         const pRes = await fetch(progressUrl);
         if (!pRes.ok) continue;
         const pData = await pRes.json();

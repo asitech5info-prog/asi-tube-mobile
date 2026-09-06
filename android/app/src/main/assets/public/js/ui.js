@@ -170,12 +170,10 @@ const UI = {
               <span>${quality}</span>
             </div>
           </div>
-          <a
+          <button
             class="btn-card-download"
-            href="${url}"
-            target="_blank"
-            download="${decodeURIComponent(safeTitle)}"
-            style="text-decoration: none;"
+            onclick="App.saveImageInApp('${safeUrl}', '${safeTitle}')"
+            type="button"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -183,7 +181,7 @@ const UI = {
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
             <span>Save Image</span>
-          </a>
+          </button>
         </div>
       `;
     }).join('');
@@ -251,12 +249,10 @@ const UI = {
 
     if (!historyList || historyList.length === 0) {
       container.innerHTML = `
-        <div class="empty-search-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <h3>Library is Empty</h3>
-          <p>Downloaded videos and songs will appear here for easy replay and sharing.</p>
+        <div class="empty-downloads-state">
+          <div class="empty-icon-cloud">📁</div>
+          <h3>No Downloads Yet</h3>
+          <p>Downloaded videos and songs will appear right here in your in-app library.</p>
         </div>
       `;
       return;
@@ -277,19 +273,28 @@ const UI = {
             </div>
           </div>
           <div class="history-actions">
-            <a
-              href="${item.downloadUrl}"
-              download="${item.filename}"
+            <button
               class="btn-history-action"
-              title="Download Again"
-              target="_blank"
+              onclick="UI.playInApp('${encodeURIComponent(item.downloadUrl)}', '${encodeURIComponent(item.title)}', '${item.format}')"
+              title="Play In-App"
+              type="button"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </button>
+            <button
+              class="btn-history-action"
+              onclick="App.redownloadHistoryItem('${encodeURIComponent(item.downloadUrl)}', '${encodeURIComponent(item.filename)}', ${isAudio})"
+              title="Save to Storage"
+              type="button"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-            </a>
+            </button>
             <button
               class="btn-history-action"
               onclick="App.removeHistoryItem(${idx})"
@@ -331,37 +336,53 @@ const UI = {
     }, 400);
 
     return {
-      finish: (downloadUrl, filename) => {
+      finish: (downloadUrl, filename, isAudio) => {
         if (UI.activeModalInterval) clearInterval(UI.activeModalInterval);
         if (modalProgress) modalProgress.style.width = '100%';
-        if (modalStatus) modalStatus.textContent = 'Stream ready! Starting download...';
+        if (modalStatus) modalStatus.textContent = 'Download started! File saving directly to phone...';
 
-        // Auto trigger download
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.setAttribute('download', filename || 'video.mp4');
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        // Native Android in-app download (Never exits app!)
+        if (window.AndroidDownloader && window.AndroidDownloader.downloadFile) {
+          window.AndroidDownloader.downloadFile(
+            downloadUrl,
+            filename,
+            isAudio ? 'audio/mpeg' : 'video/mp4'
+          );
+        } else {
+          // Browser / PWA fallback
+          try {
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.setAttribute('download', filename || 'video.mp4');
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => a.remove(), 200);
+          } catch (e) {}
+        }
 
         if (modalActionArea) {
           modalActionArea.innerHTML = `
-            <a
-              href="${downloadUrl}"
-              download="${filename}"
-              target="_blank"
+            <div class="inapp-success-box">
+              <div class="inapp-check-circle">✓</div>
+              <div class="inapp-success-info">
+                <h4>Downloading in Background</h4>
+                <p>Saved to your phone's <b>Download</b> folder.</p>
+              </div>
+            </div>
+            <button
+              onclick="UI.closeModal(); App.switchTab('downloads');"
               class="btn-primary"
-              style="text-decoration: none; width: 100%;"
+              style="width: 100%; margin-top: 12px;"
+              type="button"
             >
-              <span>Download File Again</span>
-            </a>
+              <span>View in Library</span>
+            </button>
           `;
         }
 
         setTimeout(() => {
           UI.closeModal();
-        }, 3500);
+        }, 3200);
       },
       error: (msg) => {
         if (UI.activeModalInterval) clearInterval(UI.activeModalInterval);
@@ -378,6 +399,65 @@ const UI = {
     const modal = document.getElementById('downloadModal');
     if (modal) modal.style.display = 'none';
     if (this.activeModalInterval) clearInterval(this.activeModalInterval);
+  },
+
+  // In-App Media Player
+  playInApp(encodedUrl, encodedTitle, format) {
+    const url = decodeURIComponent(encodedUrl);
+    const title = decodeURIComponent(encodedTitle || 'Media Player');
+    const modal = document.getElementById('playerModal');
+    const modalTitle = document.getElementById('playerModalTitle');
+    const videoPlayer = document.getElementById('inAppVideoPlayer');
+    const audioPlayer = document.getElementById('inAppAudioPlayer');
+    const dlBtn = document.getElementById('playerDownloadBtn');
+
+    if (modalTitle) modalTitle.textContent = title.length > 28 ? title.slice(0, 28) + '...' : title;
+
+    const isAudio = format === 'mp3' || format === 'm4a';
+    if (isAudio) {
+      if (videoPlayer) {
+        videoPlayer.pause();
+        videoPlayer.classList.add('hidden');
+      }
+      if (audioPlayer) {
+        audioPlayer.src = url;
+        audioPlayer.classList.remove('hidden');
+        audioPlayer.play().catch(() => {});
+      }
+    } else {
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.classList.add('hidden');
+      }
+      if (videoPlayer) {
+        videoPlayer.src = url;
+        videoPlayer.classList.remove('hidden');
+        videoPlayer.play().catch(() => {});
+      }
+    }
+
+    if (dlBtn) {
+      dlBtn.onclick = () => {
+        App.redownloadHistoryItem(encodedUrl, encodeURIComponent(title + '.' + (isAudio ? 'mp3' : 'mp4')), isAudio);
+      };
+    }
+
+    if (modal) modal.style.display = 'flex';
+  },
+
+  closePlayerModal() {
+    const modal = document.getElementById('playerModal');
+    const videoPlayer = document.getElementById('inAppVideoPlayer');
+    const audioPlayer = document.getElementById('inAppAudioPlayer');
+    if (videoPlayer) {
+      videoPlayer.pause();
+      videoPlayer.src = '';
+    }
+    if (audioPlayer) {
+      audioPlayer.pause();
+      audioPlayer.src = '';
+    }
+    if (modal) modal.style.display = 'none';
   },
 
   // Toast System
