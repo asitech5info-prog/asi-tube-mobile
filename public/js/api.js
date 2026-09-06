@@ -1,8 +1,8 @@
 // ASI TUBE - Multi-Engine Client API Layer for Android & Web
-// Direct client resolvers (TikTok TikWM, Invidious search, YouTube oEmbed) + Backend parity
+// Direct client resolvers (TikTok TikWM, Loader.to direct streams, Invidious search, YouTube oEmbed) + Backend parity
 
 const API = {
-  // Get configured API base URL (from Settings or current host)
+  // Get configured API base URL (only if user explicitly set a remote backend in settings)
   getBaseUrl() {
     try {
       const customUrl = localStorage.getItem('asi_backend_url');
@@ -11,10 +11,12 @@ const API = {
       }
     } catch (e) {}
 
-    // When running inside Capacitor or local file protocol
-    if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' && window.location.port === '') {
-      return 'http://localhost:3000';
+    // Only use local origin if actually running on a local development server in desktop browser
+    if (window.location.protocol.startsWith('http') && window.location.port === '3000') {
+      return '';
     }
+
+    // Inside Android WebView / Capacitor, do NOT use localhost:3000
     return '';
   },
 
@@ -121,29 +123,63 @@ const API = {
       if (tiktokData) return tiktokData;
     }
 
-    // 2. Try Backend API server
+    // 2. If user configured a backend API server, try it
     const baseUrl = this.getBaseUrl();
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
-      const res = await fetch(`${baseUrl}/api/info`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: cleanUrl }),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
+    if (baseUrl || (window.location.protocol.startsWith('http') && window.location.port === '3000')) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(`${baseUrl}/api/info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: cleanUrl }),
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.title) return data;
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.title) return data;
+        }
+      } catch (err) {
+        console.warn('Backend API info check unreachable, using direct client resolver...', err.message);
       }
-    } catch (err) {
-      console.warn('Backend API info check unreachable, trying client fallback...', err.message);
     }
 
     // 3. Fallback client-side resolver for YouTube (oEmbed)
     return this.clientFallbackInfo(cleanUrl);
+  },
+
+  // Direct Cloud Stream Resolver (Directly returns high-speed HTTPS download link)
+  async resolveCloudDirect(url, quality, format, isAudio) {
+    let f = isAudio ? 'mp3' : (quality || '1080');
+    if (['320', '256', '192', '128'].includes(quality)) f = 'mp3';
+    if (format === 'm4a') f = 'm4a';
+
+    try {
+      const initUrl = 'https://loader.to/ajax/download.php?button=1&start=1&end=1&format=' + encodeURIComponent(f) + '&url=' + encodeURIComponent(url);
+      const res = await fetch(initUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
+      if (!res.ok) throw new Error('Init failed');
+      const data = await res.json();
+      if (!data.id) throw new Error('No conversion ID');
+
+      const progressUrl = data.progress_url || ('https://loader.to/ajax/progress.php?id=' + data.id);
+      
+      for (let i = 0; i < 20; i++) {
+        await new Promise(r => setTimeout(r, 1200));
+        const pRes = await fetch(progressUrl);
+        if (!pRes.ok) continue;
+        const pData = await pRes.json();
+        if (pData.download_url && pData.download_url.startsWith('http')) {
+          return pData.download_url;
+        }
+      }
+    } catch (e) {
+      console.warn('Direct cloud stream resolver error:', e);
+    }
+    return null;
   },
 
   // Download Resolver
@@ -153,7 +189,7 @@ const API = {
     const fileExt = isAudio ? (format === 'mp3' ? 'mp3' : (format || 'mp3')) : (format || 'mp4');
     const filename = `${cleanTitle}.${fileExt}`;
 
-    // If a direct stream URL already exists (e.g. from TikTok client extraction)
+    // 1. If direct CDN stream already provided (e.g. TikTok No-Watermark)
     if (directUrl && directUrl.startsWith('http')) {
       return {
         status: 'success',
@@ -163,52 +199,67 @@ const API = {
       };
     }
 
-    const baseUrl = this.getBaseUrl();
-    const onSiteStreamUrl = `${baseUrl}/api/stream?url=${encodeURIComponent(url)}&quality=${encodeURIComponent(quality || '1080')}&format=${encodeURIComponent(fileExt)}&audioOnly=${isAudio}&title=${encodeURIComponent(cleanTitle)}`;
-
-    // Try backend download route
-    try {
-      const res = await fetch(`${baseUrl}/api/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, quality, format, audioOnly, title, directUrl })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.downloadUrl) {
-          // If relative URL and baseUrl is set, prepend it
-          if (baseUrl && data.downloadUrl.startsWith('/api')) {
-            data.downloadUrl = `${baseUrl}${data.downloadUrl}`;
-          }
-          return data;
-        }
-      }
-    } catch (e) {
-      console.warn('Backend download endpoint error, using stream fallback...', e);
+    // 2. Direct Cloud Stream Resolution (loader.to -> high-speed direct download link)
+    const directCloudUrl = await this.resolveCloudDirect(url, quality, fileExt, isAudio);
+    if (directCloudUrl) {
+      return {
+        status: 'success',
+        downloadUrl: directCloudUrl,
+        filename: filename,
+        engine: 'cloud-cdn'
+      };
     }
 
-    return {
-      status: 'success',
-      downloadUrl: onSiteStreamUrl,
-      filename: filename,
-      engine: 'on-site-stream'
-    };
+    // 3. If user configured a custom backend server (e.g. Vercel)
+    const baseUrl = this.getBaseUrl();
+    if (baseUrl) {
+      try {
+        const res = await fetch(`${baseUrl}/api/download`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, quality, format, audioOnly, title, directUrl })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.downloadUrl) {
+            if (data.downloadUrl.startsWith('/api')) {
+              data.downloadUrl = `${baseUrl}${data.downloadUrl}`;
+            }
+            return data;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 4. Fallback on-site stream URL if running on local development server
+    if (window.location.protocol.startsWith('http') && window.location.port === '3000') {
+      return {
+        status: 'success',
+        downloadUrl: `/api/stream?url=${encodeURIComponent(url)}&quality=${encodeURIComponent(quality || '1080')}&format=${encodeURIComponent(fileExt)}&audioOnly=${isAudio}&title=${encodeURIComponent(cleanTitle)}`,
+        filename: filename,
+        engine: 'on-site-stream'
+      };
+    }
+
+    throw new Error('Could not resolve download stream for this video. Please try again.');
   },
 
   // In-App YouTube Search
   async search(query) {
     const baseUrl = this.getBaseUrl();
     
-    // 1. Try Backend Search API
-    try {
-      const res = await fetch(`${baseUrl}/api/search?q=${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-          return data.results;
+    // 1. Try Backend Search API if available
+    if (baseUrl || (window.location.protocol.startsWith('http') && window.location.port === '3000')) {
+      try {
+        const res = await fetch(`${baseUrl}/api/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results && data.results.length > 0) {
+            return data.results;
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
     // 2. Direct Invidious Search Instances (Client-Side)
     const instances = [
@@ -252,7 +303,7 @@ const API = {
   // Test Server Connection
   async testConnection(targetUrl) {
     const url = (targetUrl || this.getBaseUrl() || '').trim().replace(/\/+$/, '');
-    if (!url) return { ok: false, message: 'Hybrid Client Mode (No custom server)' };
+    if (!url) return { ok: false, message: 'Direct Mobile Mode (No server needed)' };
 
     try {
       const res = await fetch(`${url}/api/search?q=test`, { signal: AbortSignal.timeout(5000) });
