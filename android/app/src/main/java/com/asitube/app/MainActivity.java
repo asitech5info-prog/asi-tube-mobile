@@ -26,10 +26,13 @@ public class MainActivity extends BridgeActivity {
         if (Intent.ACTION_SEND.equals(action) && type != null && "text/plain".equals(type)) {
             String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
             if (sharedText != null && !sharedText.trim().isEmpty()) {
-                // Pass shared URL to web application
-                String js = String.format("window.App && window.App.loadUrlToDownloader && window.App.loadUrlToDownloader('%s');", 
-                    java.net.URLEncoder.encode(sharedText.trim()));
-                getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
+                try {
+                    String encoded = java.net.URLEncoder.encode(sharedText.trim(), "UTF-8");
+                    String js = "window.App && window.App.loadUrlToDownloader && window.App.loadUrlToDownloader('" + encoded + "');";
+                    if (getBridge() != null && getBridge().getWebView() != null) {
+                        getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
+                    }
+                } catch (Exception ignored) {}
             }
         }
     }
