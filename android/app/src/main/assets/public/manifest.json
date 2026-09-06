@@ -1,0 +1,41 @@
+{
+  "name": "ASI Tube - Next-Gen Video & Audio Downloader",
+  "short_name": "ASI Tube",
+  "description": "Download videos & audio from YouTube, TikTok (no watermark), Facebook, and Instagram in Ultra HD MP4 & 320kbps MP3.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Download",
+      "url": "/#downloader",
+      "description": "Paste and download video link"
+    },
+    {
+      "name": "Search Videos",
+      "url": "/#search",
+      "description": "Search YouTube videos"
+    },
+    {
+      "name": "Downloads History",
+      "url": "/#downloads",
+      "description": "View downloaded media files"
+    }
+  ]
+}

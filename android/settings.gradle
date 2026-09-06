@@ -1,0 +1,6 @@
+include ':app'
+rootProject.name = "ASI Tube"
+
+if (new File(rootProject.projectDir, "capacitor.settings.gradle").exists()) {
+    apply from: 'capacitor.settings.gradle'
+}

@@ -1,0 +1,22 @@
+{
+  "appId": "com.asitube.app",
+  "appName": "ASI Tube",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0a0a0a",
+      "showSpinner": false
+    }
+  }
+}

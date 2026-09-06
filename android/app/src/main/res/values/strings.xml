@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">ASI Tube</string>
+    <string name="title_activity_main">ASI Tube</string>
+    <string name="package_name">com.asitube.app</string>
+    <string name="custom_url_scheme">asitube</string>
+</resources>

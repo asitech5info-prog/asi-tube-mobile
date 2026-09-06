@@ -1,0 +1,10 @@
+{
+  "appId": "com.asitube.app",
+  "appName": "ASI Tube",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
