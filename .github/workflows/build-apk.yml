@@ -36,7 +36,7 @@ jobs:
       - name: Compile Debug APK with Gradle
         working-directory: android
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace || gradle assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Find and Package APK
         run: |
