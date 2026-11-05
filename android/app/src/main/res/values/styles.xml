@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.AsiTube" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#0f0f0f</item>
+        <item name="android:navigationBarColor">#0f0f0f</item>
+        <item name="android:windowBackground">#0f0f0f</item>
+    </style>
+</resources>
+

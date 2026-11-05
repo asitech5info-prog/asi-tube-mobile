@@ -1,0 +1,80 @@
+name: Build Android APK and Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Copy Web Assets to Android Assets
+      run: |
+        mkdir -p android/app/src/main/assets
+        cp -r public/* android/app/src/main/assets/
+
+    - name: Grant Execute Permission to Gradle
+      run: |
+        cd android
+        chmod +x gradlew || true
+
+    - name: Build APK with Gradle Wrapper
+      run: |
+        cd android
+        gradle wrapper
+        ./gradlew assembleDebug --stacktrace
+
+    - name: Prepare APK Output
+      run: |
+        mkdir -p release-artifacts
+        cp android/app/build/outputs/apk/debug/app-debug.apk release-artifacts/asi-tube-v1.0.apk || cp android/app/build/outputs/apk/*/*.apk release-artifacts/asi-tube-v1.0.apk || true
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: asi-tube-apk
+        path: release-artifacts/asi-tube-v1.0.apk
+
+    - name: Create GitHub Release with APK
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+      with:
+        tag_name: v1.0.0
+        name: "asi tube v1.0.0 - Official Android Release"
+        body: |
+          ## 🎬 asi tube (AsiTube) v1.0.0
+          Official Android Release for **asi tube** — Ad-Free YouTube with Real-Time Sync, Subscriptions, Playlists & Playback Resume!
+
+          ### 📦 Download:
+          Download `asi-tube-v1.0.apk` below and install it directly on your Android device.
+
+          ### ✨ What's New:
+          - 🚫 100% Ad-Free YouTube video player
+          - ⚡ Real-Time YouTube Upload Sync
+          - 📺 Watch Later & Custom Playlists
+          - ⏱️ Smart Playback Resume (remembers where you left off)
+          - 👥 Dedicated Subscriptions & Favorite Creators
+          - 🔍 Real-Time Search across all YouTube videos
+        files: release-artifacts/asi-tube-v1.0.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

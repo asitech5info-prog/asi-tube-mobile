@@ -1,0 +1,17 @@
+{
+  "name": "asi-tube",
+  "version": "1.0.0",
+  "description": "asi tube - Ad-free YouTube for Android with live upload sync and subscriptions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-playwright.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  }
+}
