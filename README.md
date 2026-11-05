@@ -2,7 +2,7 @@
 
 > **Pure, Ad-Free YouTube Experience with Real-Time Live Sync, Subscriptions, Playlists & Playback Resume**
 
-[![Release](https://img.shields.io/github/v/release/asitech5info-prog/asi-tube?color=red)](https://github.com/asitech5info-prog/asi-tube/releases)
+[![Release](https://img.shields.io/github/v/release/asitech5info-prog/asi-tube-mobile?color=red)](https://github.com/asitech5info-prog/asi-tube-mobile/releases)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-brightgreen)](#)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](#)
 
@@ -26,7 +26,7 @@
 
 Get the official **asi tube** Android APK from our GitHub Releases:
 
-👉 **[Download Latest APK from Releases](https://github.com/asitech5info-prog/asi-tube/releases/latest)**
+👉 **[Download Latest APK from Releases](https://github.com/asitech5info-prog/asi-tube-mobile/releases/latest)**
 
 1. Download `asi-tube-v1.0.apk` onto your Android device.
 2. Tap the APK file and select **Install** (allow installation from unknown sources if prompted).
@@ -38,8 +38,8 @@ Get the official **asi tube** Android APK from our GitHub Releases:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/asitech5info-prog/asi-tube.git
-   cd asi-tube
+   git clone https://github.com/asitech5info-prog/asi-tube-mobile.git
+   cd asi-tube-mobile
    ```
 
 2. **Install dependencies**:

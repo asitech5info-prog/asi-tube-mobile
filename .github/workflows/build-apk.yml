@@ -22,9 +22,6 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
-
     - name: Copy Web Assets to Android Assets
       run: |
         mkdir -p android/app/src/main/assets
@@ -33,12 +30,11 @@ jobs:
     - name: Grant Execute Permission to Gradle
       run: |
         cd android
-        chmod +x gradlew || true
+        chmod +x gradlew
 
     - name: Build APK with Gradle Wrapper
       run: |
         cd android
-        gradle wrapper
         ./gradlew assembleDebug --stacktrace
 
     - name: Prepare APK Output
