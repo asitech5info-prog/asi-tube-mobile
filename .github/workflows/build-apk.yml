@@ -43,35 +43,34 @@ jobs:
     - name: Prepare APK Output
       run: |
         mkdir -p release-artifacts
-        cp android/app/build/outputs/apk/debug/app-debug.apk release-artifacts/asi-tube-v1.0.apk || cp android/app/build/outputs/apk/*/*.apk release-artifacts/asi-tube-v1.0.apk || true
+        cp android/app/build/outputs/apk/debug/app-debug.apk release-artifacts/asi-tube-mobile.apk || cp android/app/build/outputs/apk/*/*.apk release-artifacts/asi-tube-mobile.apk || true
+        cp release-artifacts/asi-tube-mobile.apk release-artifacts/asi-tube-v1.0.apk || true
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: asi-tube-apk
-        path: release-artifacts/asi-tube-v1.0.apk
+        path: release-artifacts/*.apk
 
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
       with:
-        tag_name: v1.0.0
-        name: "asi tube v1.0.0 - Official Android Release"
+        tag_name: v1.1.0
+        name: "asi tube mobile v1.1.0 - Professional Android Release"
         body: |
-          ## 🎬 asi tube (AsiTube) v1.0.0
-          Official Android Release for **asi tube** — Ad-Free YouTube with Real-Time Sync, Subscriptions, Playlists & Playback Resume!
+          ## 🎬 asi tube mobile v1.1.0 (Professional Release)
+          Official updated Android release for **asi tube mobile**!
 
-          ### 📦 Download:
-          Download `asi-tube-v1.0.apk` below and install it directly on your Android device.
+          ### 📲 Download:
+          Download `asi-tube-mobile.apk` below and install it directly on your Android device.
 
-          ### ✨ What's New:
-          - 🚫 100% Ad-Free YouTube video player
-          - ⚡ Real-Time YouTube Upload Sync
-          - 📺 Watch Later & Custom Playlists
-          - ⏱️ Smart Playback Resume (remembers where you left off)
-          - 👥 Dedicated Subscriptions & Favorite Creators
-          - 🔍 Real-Time Search across all YouTube videos
-        files: release-artifacts/asi-tube-v1.0.apk
+          ### ✨ Updates & Fixes in v1.1.0:
+          - 🎨 **Fixed UI Styling**: Integrated `WebViewAssetLoader` and relative stylesheet linking so AMOLED dark theme, video cards, and bottom navigation render crisply without layout glitches.
+          - ⚡ **Standalone Offline Mode**: Preloaded creators and catalog channels (MrBeast, MKBHD, Fireship, Rockstar Games, etc.) work without a local PC server.
+          - 📺 **Ad-Free Embedded Player**: Stream any YouTube video ad-free with smart second resume.
+          - 👥 **Subscriptions & Playlists**: Dedicated Subscriptions feed, Watch Later, and custom playlists persisted in storage.
+        files: release-artifacts/*.apk
         draft: false
         prerelease: false
       env:

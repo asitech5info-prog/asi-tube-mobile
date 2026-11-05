@@ -8,13 +8,7 @@ if (!fs.existsSync(screenshotsDir)) {
   fs.mkdirSync(screenshotsDir, { recursive: true });
 }
 
-const brainScreenshotsDir = path.join(
-  'C:', 'Users', 'Sohaib Irfan', '.gemini', 'antigravity', 'brain',
-  '2bf859fd-3d19-44b7-98f2-68995080d716', 'screenshots'
-);
-if (!fs.existsSync(brainScreenshotsDir)) {
-  fs.mkdirSync(brainScreenshotsDir, { recursive: true });
-}
+const brainScreenshotsDir = null;
 
 let serverProcess = null;
 
@@ -49,6 +43,7 @@ async function ensureServerRunning() {
 }
 
 function copyToBrain(filename) {
+  if (!brainScreenshotsDir) return;
   try {
     const src = path.join(screenshotsDir, filename);
     const dest = path.join(brainScreenshotsDir, filename);

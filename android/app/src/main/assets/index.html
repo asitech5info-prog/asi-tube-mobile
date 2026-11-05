@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>asi tube</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="application-name" content="asi tube">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="asi-icon.svg">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --yt-black: #0f0f0f;
+      --yt-surface: #1f1f1f;
+      --yt-border: #303030;
+      --yt-red: #ff0000;
+      --yt-text-primary: #f1f1f1;
+      --yt-text-secondary: #aaaaaa;
+    }
+    html, body {
+      background-color: #0f0f0f !important;
+      color: #f1f1f1 !important;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .icon-btn svg, .nav-item svg, .bnav-item svg, .player-action-btn svg, .pill-action-btn svg, .search-submit-btn svg, .search-back-btn svg {
+      width: 22px !important;
+      height: 22px !important;
+      max-width: 24px !important;
+      max-height: 24px !important;
+      flex-shrink: 0;
+    }
+    @media (max-width: 900px) {
+      .app-sidebar {
+        display: none !important;
+      }
+    }
+  </style>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <button class="icon-btn menu-btn" id="menuToggleBtn" title="Menu" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      
+      <div class="brand" id="brandHomeBtn">
+        <div class="brand-logo">
+          <svg viewBox="0 0 28 20" width="28" height="20">
+            <rect width="28" height="20" rx="6" fill="#FF0000"/>
+            <polygon points="11,5 19,10 11,15" fill="#FFFFFF"/>
+          </svg>
+        </div>
+        <span class="brand-name">asi tube</span>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="header-center" id="searchContainer">
+      <div class="search-box">
+        <button class="search-back-btn" id="searchBackBtn">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <input type="text" id="searchInput" placeholder="Search" autocomplete="off" autocorrect="off">
+        <button class="clear-search-btn" id="clearSearchBtn" style="display: none;">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <button class="search-submit-btn" id="searchSubmitBtn" title="Search">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </button>
+      </div>
+      <button class="icon-btn voice-search-btn" id="voiceSearchBtn" title="Search with your voice">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+      </button>
+    </div>
+
+    <!-- Header Right -->
+    <div class="header-right">
+      <!-- Small icon-only Sync button -->
+      <button class="icon-btn sync-icon-btn" id="syncBtn" title="Sync YouTube uploads" aria-label="Sync">
+        <span class="sync-icon-spin" id="syncIcon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        </span>
+        <span class="sync-dot-mini" id="syncDotMini"></span>
+      </button>
+
+      <button class="icon-btn mobile-search-trigger" id="mobileSearchTrigger" title="Search">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </button>
+
+      <!-- Notification button with badge -->
+      <div class="notif-wrapper">
+        <button class="icon-btn notif-btn" id="notifBtn" title="Notifications">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+          <span class="badge-dot" id="notifBadge" style="display: none;"></span>
+        </button>
+
+        <!-- Notification Dropdown (shown only when clicking notification button) -->
+        <div class="notif-dropdown" id="notifDropdown" style="display: none;">
+          <div class="notif-dropdown-header">
+            <h4>Notifications</h4>
+            <button class="notif-clear-btn" id="notifClearBtn">Clear</button>
+          </div>
+          <div class="notif-dropdown-list" id="notifDropdownList">
+            <p class="notif-empty">No new notifications</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Profile Picture with small A in middle -->
+      <div class="user-avatar" id="userProfileBtn" title="Account">
+        <div class="account-pfp">A</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Layout: Sidebar + Main Content -->
+  <div class="app-layout">
+    <!-- Sidebar / Drawer (Desktop & Tablet) -->
+    <aside class="app-sidebar" id="appSidebar">
+      <nav class="sidebar-nav">
+        <a href="#home" class="nav-item active" data-view="home">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="#trending" class="nav-item" data-view="trending">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.53 11.2c-.23-.3-.5-.73-.5-1.2 0-.85.66-1.57 1.52-1.68.79-.1 1.48.56 1.48 1.34 0 .39-.16.74-.42 1-.36.36-.6.86-.6 1.4 0 1.1.9 2 2 2 .54 0 1.04-.24 1.4-.6.26-.26.61-.42 1-.42.78 0 1.44.69 1.34 1.48-.11.86-.83 1.52-1.68 1.52-.47 0-.9-.27-1.2-.5-.45.69-1.2 1.16-2.07 1.16-1.38 0-2.5-1.12-2.5-2.5 0-.87.47-1.62 1.16-2.07zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          <span>Trending</span>
+        </a>
+        <a href="#subscriptions" class="nav-item" data-view="subscriptions">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4l-6-3.27v6.53L16 16z"/></svg>
+          <span>Subscriptions</span>
+          <span class="sub-counter" id="sidebarSubCount">3</span>
+        </a>
+        <a href="#library" class="nav-item" data-view="library">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>
+          <span>Library</span>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-title">SUBSCRIPTIONS</div>
+        <div class="sidebar-subscriptions" id="sidebarSubscriptionsList">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-footer">
+          <p><strong>asi tube</strong></p>
+          <p>© 2026 AsiTube</p>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content Container -->
+    <main class="app-main" id="mainContent">
+
+      <!-- Category Filter Pills -->
+      <section class="filter-pills-bar" id="categoryPills">
+        <button class="pill active" data-category="All">All</button>
+        <button class="pill" data-category="Recently Uploaded">Recently Uploaded</button>
+        <button class="pill" data-category="Trending">Trending</button>
+        <button class="pill" data-category="Tech">Tech</button>
+        <button class="pill" data-category="Gaming">Gaming</button>
+        <button class="pill" data-category="Coding">Coding</button>
+        <button class="pill" data-category="Science">Science</button>
+        <button class="pill" data-category="Music">Music</button>
+      </section>
+
+      <!-- VIEW 1: HOME VIEW -->
+      <div class="view-panel active" id="homeView">
+        <div class="section-header">
+          <h2 class="section-title">Recommended Videos</h2>
+          <span class="video-counter" id="videoCountBadge">13 videos</span>
+        </div>
+        <div class="video-grid" id="videoGrid">
+          <!-- Populated by JavaScript with real thumbnails and avatars -->
+        </div>
+      </div>
+
+      <!-- VIEW 2: SUBSCRIPTIONS VIEW -->
+      <div class="view-panel" id="subscriptionsView">
+        <div class="subscriptions-header">
+          <div>
+            <h2 class="section-title">Your Subscribed Creators</h2>
+            <p class="section-subtitle">Dedicated feed for videos from your favourite YouTube creators</p>
+          </div>
+          <button class="btn-manage-subs" id="manageSubsBtn">Manage</button>
+        </div>
+
+        <!-- Horizontal Story-like Creator Avatars -->
+        <div class="creator-stories-container">
+          <div class="creator-stories-scroll" id="creatorStoriesBar">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="subs-feed-header">
+          <h3 id="subsFeedTitle">Latest from All Subscribed Channels</h3>
+          <span class="badge-creator-filter" id="activeCreatorFilterBadge" style="display: none;">
+            Filtered by: <strong id="filterCreatorName"></strong>
+            <button id="clearCreatorFilter">✕</button>
+          </span>
+        </div>
+
+        <div class="video-grid" id="subscriptionsVideoGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- VIEW 3: TRENDING VIEW -->
+      <div class="view-panel" id="trendingView">
+        <div class="section-header">
+          <h2 class="section-title">Trending</h2>
+        </div>
+        <div class="video-grid" id="trendingVideoGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- VIEW 4: LIBRARY VIEW -->
+      <div class="view-panel" id="libraryView">
+        <div class="section-header">
+          <h2 class="section-title">Library</h2>
+        </div>
+
+        <div class="library-section">
+          <div class="library-section-title">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <h3>Watch History</h3>
+          </div>
+          <div class="video-grid" id="historyVideoGrid">
+            <p class="empty-msg">No videos in watch history yet.</p>
+          </div>
+        </div>
+
+        <div class="library-section">
+          <div class="library-section-title">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+            <h3>Liked Videos</h3>
+          </div>
+          <div class="video-grid" id="likedVideoGrid">
+            <p class="empty-msg">No liked videos yet.</p>
+          </div>
+        </div>
+
+        <!-- Playlists Section -->
+        <div class="library-section">
+          <div class="library-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 9H2v2h17V9zm0-4H2v2h17V5zM2 15h11v-2H2v2zm17 0v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z"/></svg>
+              <h3>Playlists</h3>
+            </div>
+            <button class="btn-create-playlist-header" id="newPlaylistBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <span>New Playlist</span>
+            </button>
+          </div>
+          <div class="playlists-grid" id="playlistsGrid">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 5: PLAYLIST DETAIL VIEW -->
+      <div class="view-panel" id="playlistDetailView">
+        <div class="playlist-detail-header">
+          <button class="btn-back-library" id="playlistBackBtn">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            <span>Library</span>
+          </button>
+          <div class="playlist-info-card">
+            <div class="playlist-cover-wrapper">
+              <img id="playlistDetailCover" src="thumbnails/_c2e1NcI3Sc.jpg" alt="Cover">
+              <div class="playlist-overlay-badge" id="playlistDetailCount">0 videos</div>
+            </div>
+            <div class="playlist-meta-details">
+              <h2 id="playlistDetailTitle">Watch Later</h2>
+              <p id="playlistDetailDesc">Videos saved to watch later</p>
+              <div class="playlist-actions-bar">
+                <button class="btn-play-all" id="playlistPlayAllBtn">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                  <span>Play All</span>
+                </button>
+                <button class="btn-delete-pl" id="playlistDeleteBtn" style="display: none;">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="video-grid" id="playlistVideosGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- REAL YOUTUBE VIDEO PLAYER VIEW / OVERLAY -->
+  <div class="player-overlay" id="playerOverlay" style="display: none;">
+    <div class="player-container">
+      
+      <!-- Player Top Bar (Back & Share only - NO ad free banner) -->
+      <div class="player-top-bar">
+        <button class="player-action-btn" id="playerCloseBtn" title="Back to feed">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <span>Back</span>
+        </button>
+
+        <button class="player-action-btn" id="playerShareBtn" title="Share video">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+        </button>
+      </div>
+
+      <!-- Real YouTube Video Player Frame (NO zero ads shield) -->
+      <div class="video-frame-wrapper" id="videoFrameWrapper">
+        <iframe id="videoIframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+
+      <!-- Video Details -->
+      <div class="player-body">
+        <div class="player-details">
+          <h1 class="player-title" id="playerVideoTitle">Video Title</h1>
+          
+          <div class="player-meta-row">
+            <span id="playerVideoViews">0 views</span> • 
+            <span id="playerVideoUploaded">Just now</span> • 
+            <span class="badge-category" id="playerVideoCategory">Category</span>
+          </div>
+
+          <!-- Action Buttons: Like, Dislike, Share, Download -->
+          <div class="player-actions-row">
+            <button class="pill-action-btn" id="playerLikeBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+              <span id="playerLikesCount">Like</span>
+            </button>
+            
+            <button class="pill-action-btn" id="playerDislikeBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+              <span>Dislike</span>
+            </button>
+
+            <button class="pill-action-btn" id="playerShareBtn2">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+              <span>Share</span>
+            </button>
+
+            <button class="pill-action-btn" id="playerDownloadBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+              <span>Save</span>
+            </button>
+          </div>
+
+          <!-- Channel Bar & Subscribe button -->
+          <div class="player-channel-bar">
+            <div class="channel-info" id="playerChannelLink">
+              <img class="channel-avatar" id="playerChannelAvatar" src="" alt="Channel Avatar">
+              <div>
+                <h4 class="channel-name" id="playerChannelName">Channel Name</h4>
+                <span class="channel-subs" id="playerChannelSubs">0 subscribers</span>
+              </div>
+            </div>
+
+            <!-- Subscribe Button -->
+            <button class="subscribe-btn" id="playerSubscribeBtn">
+              Subscribe
+            </button>
+          </div>
+
+          <!-- Description Box -->
+          <div class="description-box" id="descriptionBox">
+            <p class="description-text" id="playerDescription">Video description...</p>
+            <button class="desc-toggle" id="descToggleBtn">Show more</button>
+          </div>
+
+          <!-- Comments Section -->
+          <div class="comments-section">
+            <div class="comments-header">
+              <h3>Comments <span id="commentsCount">(0)</span></h3>
+            </div>
+
+            <!-- Add Comment Input -->
+            <div class="add-comment-row">
+              <div class="account-pfp small">A</div>
+              <div class="comment-input-wrapper">
+                <input type="text" id="commentInput" placeholder="Add a comment...">
+                <button class="btn-post-comment" id="postCommentBtn">Comment</button>
+              </div>
+            </div>
+
+            <!-- Comments List -->
+            <div class="comments-list" id="commentsList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Related / Up Next column -->
+        <div class="player-related-column">
+          <h3 class="related-title">Up Next</h3>
+          <div class="related-list" id="relatedVideosList">
+            <!-- Dynamically populated with real thumbnails -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Android Bottom Navigation Bar -->
+  <nav class="android-bottom-nav" id="bottomNav">
+    <button class="bnav-item active" data-view="home">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Home</span>
+    </button>
+
+    <button class="bnav-item" data-view="trending">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.53 11.2c-.23-.3-.5-.73-.5-1.2 0-.85.66-1.57 1.52-1.68.79-.1 1.48.56 1.48 1.34 0 .39-.16.74-.42 1-.36.36-.6.86-.6 1.4 0 1.1.9 2 2 2 .54 0 1.04-.24 1.4-.6.26-.26.61-.42 1-.42.78 0 1.44.69 1.34 1.48-.11.86-.83 1.52-1.68 1.52-.47 0-.9-.27-1.2-.5-.45.69-1.2 1.16-2.07 1.16-1.38 0-2.5-1.12-2.5-2.5 0-.87.47-1.62 1.16-2.07zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      <span>Trending</span>
+    </button>
+
+    <button class="bnav-item" data-view="subscriptions">
+      <div class="bnav-icon-wrapper">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4l-6-3.27v6.53L16 16z"/></svg>
+        <span class="bnav-badge" id="bnavSubBadge">3</span>
+      </div>
+      <span>Subscriptions</span>
+    </button>
+
+    <button class="bnav-item" data-view="library">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>
+      <span>Library</span>
+    </button>
+  </nav>
+
+  <!-- Manage Subscriptions Modal -->
+  <div class="modal-backdrop" id="manageSubsModal" style="display: none;">
+    <div class="modal-content manage-subs-modal">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3>Manage Subscriptions</h3>
+          <span class="sub-counter-badge" id="modalSubCount">0</span>
+        </div>
+        <button class="modal-close-btn" id="closeManageSubsBtn">✕</button>
+      </div>
+      <div class="manage-subs-search">
+        <input type="text" id="manageSubsSearchInput" placeholder="Search subscribed creators...">
+      </div>
+      <div class="manage-subs-list" id="manageSubsList">
+        <!-- Populated by JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary-action" id="doneManageSubsBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save to Playlist Modal -->
+  <div class="modal-backdrop" id="playlistModal" style="display: none;">
+    <div class="modal-content playlist-modal">
+      <div class="modal-header">
+        <h3>Save video to...</h3>
+        <button class="modal-close-btn" id="closePlaylistModalBtn">✕</button>
+      </div>
+      <div class="playlist-checkbox-list" id="playlistCheckboxList">
+        <!-- Checkboxes for Watch Later and custom playlists -->
+      </div>
+      <div class="create-playlist-row">
+        <input type="text" id="newPlaylistInput" placeholder="New playlist title...">
+        <button class="btn-create-pl" id="createPlaylistSubmitBtn">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resume Watch Notification Toast -->
+  <div class="resume-toast" id="resumeToast" style="display: none;">
+    <div class="resume-toast-content">
+      <span class="resume-toast-text" id="resumeToastText">Resumed from 1:20</span>
+      <button class="resume-toast-btn" id="resumeRestartBtn">Start Over</button>
+    </div>
+  </div>
+
+  <script src="youtube-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

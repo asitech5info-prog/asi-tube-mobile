@@ -11,15 +11,54 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="application-name" content="asi tube">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/svg+xml" href="/asi-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="asi-icon.svg">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root {
+      --yt-black: #0f0f0f;
+      --yt-surface: #1f1f1f;
+      --yt-border: #303030;
+      --yt-red: #ff0000;
+      --yt-text-primary: #f1f1f1;
+      --yt-text-secondary: #aaaaaa;
+    }
+    html, body {
+      background-color: #0f0f0f !important;
+      color: #f1f1f1 !important;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .icon-btn svg, .nav-item svg, .bnav-item svg, .player-action-btn svg, .pill-action-btn svg, .search-submit-btn svg, .search-back-btn svg {
+      width: 22px !important;
+      height: 22px !important;
+      max-width: 24px !important;
+      max-height: 24px !important;
+      flex-shrink: 0;
+    }
+    @media (max-width: 900px) {
+      .app-sidebar {
+        display: none !important;
+      }
+    }
+  </style>
+
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body class="dark-theme">
 
@@ -258,7 +297,7 @@
           </button>
           <div class="playlist-info-card">
             <div class="playlist-cover-wrapper">
-              <img id="playlistDetailCover" src="/thumbnails/_c2e1NcI3Sc.jpg" alt="Cover">
+              <img id="playlistDetailCover" src="thumbnails/_c2e1NcI3Sc.jpg" alt="Cover">
               <div class="playlist-overlay-badge" id="playlistDetailCount">0 videos</div>
             </div>
             <div class="playlist-meta-details">
@@ -471,6 +510,7 @@
     </div>
   </div>
 
-  <script src="/app.js"></script>
+  <script src="youtube-data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

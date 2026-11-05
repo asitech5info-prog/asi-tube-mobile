@@ -128,22 +128,31 @@ const dom = {
 // Helper: Channel Avatar & SVG Fallbacks
 function getChannelAvatar(channelId, avatarUrl, channelTitle) {
   const localAvatars = {
-    'mrbeast': '/avatars/mrbeast.jpg',
-    'mkbhd': '/avatars/mkbhd.jpg',
-    'fireship': '/avatars/fireship.jpg',
-    'rockstargames': '/avatars/rockstargames.jpg',
-    'veritasium': '/avatars/veritasium.jpg',
-    'kurzgesagt': '/avatars/kurzgesagt.jpg',
-    'lofigirl': '/avatars/lofigirl.jpg',
-    'pewdiepie': '/avatars/pewdiepie.jpg'
+    'mrbeast': 'avatars/mrbeast.jpg',
+    'mkbhd': 'avatars/mkbhd.jpg',
+    'fireship': 'avatars/fireship.jpg',
+    'rockstargames': 'avatars/rockstargames.jpg',
+    'veritasium': 'avatars/veritasium.jpg',
+    'kurzgesagt': 'avatars/kurzgesagt.jpg',
+    'lofigirl': 'avatars/lofigirl.jpg',
+    'pewdiepie': 'avatars/pewdiepie.jpg'
   };
   if (channelId && localAvatars[channelId]) {
     return localAvatars[channelId];
   }
   if (avatarUrl && !avatarUrl.includes('AIdro_n8-W7zGg') && !avatarUrl.startsWith('data:image/svg') === false) {
-    return avatarUrl;
+    return avatarUrl.startsWith('/') ? avatarUrl.slice(1) : avatarUrl;
   }
   return getSvgAvatarDataUrl(channelTitle || channelId || 'YouTube');
+}
+
+function getThumbnailUrl(video) {
+  if (!video) return 'thumbnails/_c2e1NcI3Sc.jpg';
+  let t = video.thumbnail || `thumbnails/${video.id}.jpg`;
+  if (typeof t === 'string' && t.startsWith('/thumbnails/')) {
+    t = t.slice(1);
+  }
+  return t;
 }
 
 function getSvgAvatarDataUrl(name) {
@@ -181,13 +190,29 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPlaylists();
 });
 
-// Load saved subscriptions and watch progress from LocalStorage
+// Load saved subscriptions, likes, history, playlists and watch progress from LocalStorage
 function initStorageState() {
   try {
     const savedSubs = localStorage.getItem('asitube_subscriptions');
     if (savedSubs) {
       const arr = JSON.parse(savedSubs);
       state.subscriptions = new Set(arr);
+    }
+  } catch (e) {}
+
+  try {
+    const savedLikes = localStorage.getItem('asitube_liked_videos');
+    if (savedLikes) {
+      state.likedVideos = new Set(JSON.parse(savedLikes));
+    }
+  } catch (e) {}
+
+  try {
+    const savedHistory = localStorage.getItem('asitube_watch_history');
+    if (savedHistory) {
+      state.watchHistory = JSON.parse(savedHistory);
+    } else {
+      state.watchHistory = [];
     }
   } catch (e) {}
 
@@ -202,6 +227,24 @@ function initStorageState() {
 function persistSubscriptions() {
   try {
     localStorage.setItem('asitube_subscriptions', JSON.stringify([...state.subscriptions]));
+  } catch (e) {}
+}
+
+function persistLikes() {
+  try {
+    localStorage.setItem('asitube_liked_videos', JSON.stringify([...state.likedVideos]));
+  } catch (e) {}
+}
+
+function persistHistory() {
+  try {
+    localStorage.setItem('asitube_watch_history', JSON.stringify(state.watchHistory));
+  } catch (e) {}
+}
+
+function persistPlaylists() {
+  try {
+    localStorage.setItem('asitube_playlists', JSON.stringify(state.playlists));
   } catch (e) {}
 }
 
@@ -583,26 +626,32 @@ function switchView(viewName) {
 async function loadChannels() {
   try {
     const res = await fetch('/api/channels');
-    const data = await res.json();
-    state.channels = data.channels || [];
-    
-    // Merge server channels with local storage subscriptions
-    if (state.subscriptions.size === 0) {
-      state.subscriptions = new Set(state.channels.filter(c => c.subscribed).map(c => c.id));
-      persistSubscriptions();
+    if (res.ok) {
+      const data = await res.json();
+      state.channels = data.channels || [];
     } else {
-      // Sync local subscriptions into channel objects
-      state.channels.forEach(c => {
-        if (state.subscriptions.has(c.id)) c.subscribed = true;
-      });
+      throw new Error('Server not reachable');
     }
-
-    updateSubscriptionCounters();
-    renderSidebarSubscriptions();
-    renderCreatorStories();
   } catch (err) {
-    console.error('Error loading channels:', err);
+    if (window.ASI_DATA && window.ASI_DATA.channels) {
+      state.channels = JSON.parse(JSON.stringify(window.ASI_DATA.channels));
+    }
   }
+    
+  // Merge channels with local storage subscriptions
+  if (state.subscriptions.size === 0 && state.channels.length > 0) {
+    state.subscriptions = new Set(state.channels.filter(c => c.subscribed).map(c => c.id));
+    persistSubscriptions();
+  } else {
+    // Sync local subscriptions into channel objects
+    state.channels.forEach(c => {
+      c.subscribed = state.subscriptions.has(c.id);
+    });
+  }
+
+  updateSubscriptionCounters();
+  renderSidebarSubscriptions();
+  renderCreatorStories();
 }
 
 function updateSubscriptionCounters() {
@@ -883,103 +932,169 @@ async function loadVideos() {
       url = `/api/search?q=${encodeURIComponent(state.searchQuery)}`;
     }
     const res = await fetch(url);
-    const data = await res.json();
-    state.videos = data.videos || [];
-
-    if (dom.videoCountBadge) {
-      dom.videoCountBadge.textContent = `${state.videos.length} videos`;
+    if (res.ok) {
+      const data = await res.json();
+      state.videos = data.videos || [];
+    } else {
+      throw new Error('Offline fallback');
     }
-
-    renderVideoGrid(dom.videoGrid, state.videos);
   } catch (err) {
-    console.error('Error loading videos:', err);
+    if (window.ASI_DATA && window.ASI_DATA.initialVideos) {
+      let vids = JSON.parse(JSON.stringify(window.ASI_DATA.initialVideos));
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        vids = vids.filter(v =>
+          (v.title && v.title.toLowerCase().includes(q)) ||
+          (v.channelTitle && v.channelTitle.toLowerCase().includes(q)) ||
+          (v.tags && v.tags.some(t => t.toLowerCase().includes(q)))
+        );
+      } else if (state.activeCategory && state.activeCategory !== 'All') {
+        if (state.activeCategory === 'Recently Uploaded') {
+          vids = vids.sort((a, b) => b.timestamp - a.timestamp);
+        } else {
+          vids = vids.filter(v => v.category?.toLowerCase() === state.activeCategory.toLowerCase() || (v.tags && v.tags.some(t => t.toLowerCase() === state.activeCategory.toLowerCase())));
+        }
+      }
+      state.videos = vids;
+    }
   }
+
+  if (dom.videoCountBadge) {
+    dom.videoCountBadge.textContent = `${state.videos.length} videos`;
+  }
+
+  renderVideoGrid(dom.videoGrid, state.videos);
 }
 
 // Load Subscriptions Feed
 async function loadSubscriptionsFeed() {
   if (!dom.subscriptionsVideoGrid) return;
+  let subsVideos = [];
   try {
     let url = '/api/subscriptions';
     if (state.selectedCreatorId) {
       url = `/api/videos?channelId=${encodeURIComponent(state.selectedCreatorId)}`;
     }
     const res = await fetch(url);
-    const data = await res.json();
-    let subsVideos = data.videos || [];
-
-    // Filter videos by client subscription set
-    if (!state.selectedCreatorId) {
-      subsVideos = state.videos.filter(v => state.subscriptions.has(v.channelId));
+    if (res.ok) {
+      const data = await res.json();
+      subsVideos = data.videos || [];
+    } else {
+      throw new Error('Offline fallback');
     }
-
-    if (subsVideos.length === 0) {
-      dom.subscriptionsVideoGrid.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.03); border-radius: 14px;">
-          <h3 style="margin-bottom: 8px;">No uploads found from subscribed channels</h3>
-          <p style="color: #aaa; font-size: 14px; margin-bottom: 16px;">Subscribe to creators to see their newest videos here!</p>
-          <button class="btn-primary-action" onclick="state.activeCategory='All'; switchView('home');">Explore Creators</button>
-        </div>
-      `;
-      return;
-    }
-
-    renderVideoGrid(dom.subscriptionsVideoGrid, subsVideos);
   } catch (err) {
-    console.error('Error loading subscriptions feed:', err);
+    const all = state.videos.length > 0 ? state.videos : (window.ASI_DATA?.initialVideos || []);
+    if (state.selectedCreatorId) {
+      subsVideos = all.filter(v => v.channelId === state.selectedCreatorId);
+    } else {
+      subsVideos = all.filter(v => state.subscriptions.has(v.channelId));
+    }
   }
+
+  if (!state.selectedCreatorId && subsVideos.length > 0) {
+    subsVideos = subsVideos.filter(v => state.subscriptions.has(v.channelId));
+  }
+
+  if (subsVideos.length === 0) {
+    dom.subscriptionsVideoGrid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.03); border-radius: 14px;">
+        <h3 style="margin-bottom: 8px;">No uploads found from subscribed channels</h3>
+        <p style="color: #aaa; font-size: 14px; margin-bottom: 16px;">Subscribe to creators to see their newest videos here!</p>
+        <button class="btn-primary-action" onclick="state.activeCategory='All'; switchView('home');">Explore Creators</button>
+      </div>
+    `;
+    return;
+  }
+
+  renderVideoGrid(dom.subscriptionsVideoGrid, subsVideos);
 }
 
 // Load Trending Videos
 async function loadTrendingVideos() {
   if (!dom.trendingVideoGrid) return;
+  let trending = [];
   try {
     const res = await fetch('/api/videos?category=Trending');
-    const data = await res.json();
-    renderVideoGrid(dom.trendingVideoGrid, data.videos || []);
+    if (res.ok) {
+      const data = await res.json();
+      trending = data.videos || [];
+    } else {
+      throw new Error('Offline fallback');
+    }
   } catch (err) {
-    console.error('Error loading trending videos:', err);
+    const all = state.videos.length > 0 ? state.videos : (window.ASI_DATA?.initialVideos || []);
+    trending = all.filter(v => v.category === 'Trending' || (v.tags && v.tags.includes('Trending')));
   }
+  renderVideoGrid(dom.trendingVideoGrid, trending);
 }
 
 // Load Library (History, Liked Videos, Playlists)
 async function loadLibrary() {
+  let historyList = [];
+  let likedList = [];
+
   try {
     const res = await fetch('/api/library');
-    const data = await res.json();
-
-    if (dom.historyVideoGrid) {
-      if (data.history && data.history.length > 0) {
-        renderVideoGrid(dom.historyVideoGrid, data.history);
-      } else {
-        dom.historyVideoGrid.innerHTML = '<p class="empty-msg">No videos watched yet.</p>';
-      }
+    if (res.ok) {
+      const data = await res.json();
+      historyList = data.history || [];
+      likedList = data.likedVideos || [];
+    } else {
+      throw new Error('Offline fallback');
     }
-
-    if (dom.likedVideoGrid) {
-      if (data.likedVideos && data.likedVideos.length > 0) {
-        renderVideoGrid(dom.likedVideoGrid, data.likedVideos);
-      } else {
-        dom.likedVideoGrid.innerHTML = '<p class="empty-msg">No liked videos yet.</p>';
-      }
-    }
-
-    renderPlaylistsGrid();
   } catch (err) {
-    console.error('Error loading library:', err);
+    const all = state.videos.length > 0 ? state.videos : (window.ASI_DATA?.initialVideos || []);
+    historyList = (state.watchHistory || []).map(id => all.find(v => v.id === id)).filter(Boolean);
+    likedList = [...state.likedVideos].map(id => all.find(v => v.id === id)).filter(Boolean);
   }
+
+  if (dom.historyVideoGrid) {
+    if (historyList && historyList.length > 0) {
+      renderVideoGrid(dom.historyVideoGrid, historyList);
+    } else {
+      dom.historyVideoGrid.innerHTML = '<p class="empty-msg">No videos watched yet.</p>';
+    }
+  }
+
+  if (dom.likedVideoGrid) {
+    if (likedList && likedList.length > 0) {
+      renderVideoGrid(dom.likedVideoGrid, likedList);
+    } else {
+      dom.likedVideoGrid.innerHTML = '<p class="empty-msg">No liked videos yet.</p>';
+    }
+  }
+
+  renderPlaylistsGrid();
 }
 
 // Load Playlists from server / local storage
 async function loadPlaylists() {
   try {
     const res = await fetch('/api/playlists');
-    const data = await res.json();
-    state.playlists = data.playlists || [];
-    renderPlaylistsGrid();
+    if (res.ok) {
+      const data = await res.json();
+      state.playlists = data.playlists || [];
+    } else {
+      throw new Error('Offline fallback');
+    }
   } catch (err) {
-    console.error('Error loading playlists:', err);
+    const saved = localStorage.getItem('asitube_playlists');
+    if (saved) {
+      state.playlists = JSON.parse(saved);
+    } else {
+      state.playlists = [
+        {
+          id: 'watch_later',
+          title: 'Watch Later',
+          description: 'Videos saved to watch later',
+          videoIds: ['_c2e1NcI3Sc', 'QdBZY2fkU-0'],
+          createdAt: Date.now() - 3600000
+        }
+      ];
+      persistPlaylists();
+    }
   }
+  renderPlaylistsGrid();
 }
 
 // Render Playlists in Library View
@@ -1033,7 +1148,7 @@ async function openPlaylistDetail(playlistId) {
   const count = pl.videoIds ? pl.videoIds.length : 0;
   if (dom.playlistDetailCount) dom.playlistDetailCount.textContent = `${count} videos`;
   
-  const cover = pl.thumbnail || '/thumbnails/_c2e1NcI3Sc.jpg';
+  const cover = pl.thumbnail || 'thumbnails/_c2e1NcI3Sc.jpg';
   if (dom.playlistDetailCover) dom.playlistDetailCover.src = cover;
 
   if (dom.playlistDeleteBtn) {
@@ -1050,14 +1165,15 @@ async function handleDeleteCurrentPlaylist() {
   if (!state.currentPlaylist || state.currentPlaylist.id === 'watch_later') return;
   if (!confirm(`Are you sure you want to delete the playlist "${state.currentPlaylist.title}"?`)) return;
 
+  const toDeleteId = state.currentPlaylist.id;
+  state.playlists = state.playlists.filter(p => p.id !== toDeleteId);
+  persistPlaylists();
+  switchView('library');
+  loadPlaylists();
+
   try {
-    await fetch(`/api/playlists/${encodeURIComponent(state.currentPlaylist.id)}`, { method: 'DELETE' });
-    state.playlists = state.playlists.filter(p => p.id !== state.currentPlaylist.id);
-    switchView('library');
-    loadPlaylists();
-  } catch (e) {
-    console.error('Error deleting playlist:', e);
-  }
+    await fetch(`/api/playlists/${encodeURIComponent(toDeleteId)}`, { method: 'DELETE' });
+  } catch (e) {}
 }
 
 // Save to Playlist Modal
@@ -1106,17 +1222,23 @@ async function toggleVideoInPlaylist(playlistId, videoId, add) {
 
   if (add) {
     if (!pl.videoIds.includes(videoId)) pl.videoIds.unshift(videoId);
-    await fetch(`/api/playlists/${playlistId}/videos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoId })
-    });
   } else {
     pl.videoIds = pl.videoIds.filter(id => id !== videoId);
-    await fetch(`/api/playlists/${playlistId}/videos/${videoId}`, { method: 'DELETE' });
   }
-
+  persistPlaylists();
   loadPlaylists();
+
+  try {
+    if (add) {
+      await fetch(`/api/playlists/${playlistId}/videos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId })
+      });
+    } else {
+      await fetch(`/api/playlists/${playlistId}/videos/${videoId}`, { method: 'DELETE' });
+    }
+  } catch (e) {}
 }
 
 async function handleCreatePlaylistSubmit() {
@@ -1124,8 +1246,21 @@ async function handleCreatePlaylistSubmit() {
   const title = dom.newPlaylistInput.value.trim();
   if (!title) return;
 
+  const newPl = {
+    id: 'pl_' + Date.now(),
+    title,
+    description: '',
+    videoIds: state.activeSaveVideoId ? [state.activeSaveVideoId] : [],
+    createdAt: Date.now()
+  };
+  state.playlists.push(newPl);
+  persistPlaylists();
+  dom.newPlaylistInput.value = '';
+  loadPlaylists();
+  renderPlaylistCheckboxes();
+
   try {
-    const res = await fetch('/api/playlists', {
+    await fetch('/api/playlists', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1133,15 +1268,7 @@ async function handleCreatePlaylistSubmit() {
         videoId: state.activeSaveVideoId
       })
     });
-    const data = await res.json();
-    if (data.playlist) {
-      dom.newPlaylistInput.value = '';
-      await loadPlaylists();
-      renderPlaylistCheckboxes();
-    }
-  } catch (e) {
-    console.error('Error creating playlist:', e);
-  }
+  } catch (e) {}
 }
 
 // Render Video Grid with REAL YouTube Thumbnails, Avatars, and Watch Progress
@@ -1230,75 +1357,119 @@ function renderVideoGrid(container, videos) {
 
 // Open REAL Ad-Free YouTube Video Player with Playback Resume
 async function openPlayer(videoId) {
+  let video = null;
+  let channel = null;
+  let comments = [];
+  let related = [];
+
   try {
     const res = await fetch(`/api/videos/${videoId}`);
-    const data = await res.json();
-    const video = data.video;
-    state.currentVideo = video;
-
-    const durationSec = parseDurationToSeconds(video.duration);
-    const progress = getWatchProgress(videoId);
-    let startParam = '';
-
-    // Check if video was previously watched
-    if (progress && progress.currentTime > 5 && (durationSec === 0 || progress.currentTime < durationSec - 5)) {
-      startParam = `&start=${Math.floor(progress.currentTime)}`;
-      
-      // Show resume notification toast
-      if (dom.resumeToast && dom.resumeToastText) {
-        dom.resumeToastText.textContent = `Resumed from ${formatSeconds(progress.currentTime)}`;
-        dom.resumeToast.style.display = 'block';
-        setTimeout(() => {
-          if (dom.resumeToast) dom.resumeToast.style.display = 'none';
-        }, 4000);
-      }
+    if (res.ok) {
+      const data = await res.json();
+      video = data.video;
+      channel = data.channel;
+      comments = data.comments || [];
+      related = data.related || [];
     } else {
-      if (dom.resumeToast) dom.resumeToast.style.display = 'none';
-    }
-
-    if (dom.videoIframe) {
-      dom.videoIframe.src = `${video.embedUrl}${startParam}`;
-    }
-
-    startWatchTracker(videoId, durationSec);
-
-    if (dom.playerVideoTitle) dom.playerVideoTitle.textContent = video.title;
-    if (dom.playerVideoViews) dom.playerVideoViews.textContent = `${video.views} views`;
-    if (dom.playerVideoUploaded) dom.playerVideoUploaded.textContent = video.uploadedAt;
-    if (dom.playerVideoCategory) dom.playerVideoCategory.textContent = video.category || 'General';
-    if (dom.playerLikesCount) dom.playerLikesCount.textContent = video.likes || 'Like';
-    
-    // Channel avatar & name
-    if (dom.playerChannelAvatar) {
-      const pAvatar = getChannelAvatar(video.channelId, data.channel?.avatar || video.channelAvatar, video.channelTitle);
-      dom.playerChannelAvatar.src = pAvatar;
-      dom.playerChannelAvatar.onerror = function() {
-        this.onerror = null;
-        this.src = getSvgAvatarDataUrl(video.channelTitle);
-      };
-    }
-    if (dom.playerChannelName) dom.playerChannelName.textContent = video.channelTitle;
-    if (dom.playerChannelSubs) dom.playerChannelSubs.textContent = `${video.subscriberCount || '1M'} subscribers`;
-    
-    const isSubscribed = state.subscriptions.has(video.channelId);
-    updatePlayerSubscribeButton(isSubscribed);
-
-    const isLiked = state.likedVideos.has(video.id) || video.isLiked;
-    if (dom.playerLikeBtn) dom.playerLikeBtn.classList.toggle('active', isLiked);
-
-    if (dom.playerDescription) {
-      dom.playerDescription.textContent = video.description || 'Enjoy uninterrupted viewing on AsiTube.';
-    }
-
-    renderComments(data.comments || []);
-    renderRelatedVideos(data.related || []);
-
-    if (dom.playerOverlay) {
-      dom.playerOverlay.style.display = 'block';
-      dom.playerOverlay.scrollTop = 0;
+      throw new Error('Offline fallback');
     }
   } catch (err) {
-    console.error('Error opening video player:', err);
+    const all = state.videos.length > 0 ? state.videos : (window.ASI_DATA?.initialVideos || []);
+    video = all.find(v => v.id === videoId) || {
+      id: videoId,
+      title: `YouTube Video (${videoId})`,
+      channelId: 'youtube',
+      channelTitle: 'YouTube Creator',
+      thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      views: 'Popular',
+      uploadedAt: 'YouTube',
+      duration: '10:00',
+      category: 'General',
+      description: 'Enjoy uninterrupted viewing on AsiTube ad-free.'
+    };
+    channel = state.channels.find(c => c.id === video.channelId);
+    
+    const savedComments = JSON.parse(localStorage.getItem('asitube_comments_' + videoId) || '[]');
+    const seedComments = (window.ASI_DATA?.sampleComments && window.ASI_DATA.sampleComments[videoId]) || [
+      { id: "c_def1", user: "AsiTube Viewer", avatar: "avatars/mrbeast.jpg", time: "Just now", text: "Loving this video completely ad-free on AsiTube!", likes: "142" }
+    ];
+    comments = [...savedComments, ...seedComments];
+    related = all.filter(v => v.id !== videoId).slice(0, 8);
+  }
+
+  if (!video.embedUrl) {
+    video.embedUrl = `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&enablejsapi=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1`;
+  }
+
+  state.currentVideo = video;
+
+  // Save to watch history
+  if (!state.watchHistory) state.watchHistory = [];
+  if (!state.watchHistory.includes(video.id)) {
+    state.watchHistory.unshift(video.id);
+    persistHistory();
+  }
+
+  const durationSec = parseDurationToSeconds(video.duration);
+  const progress = getWatchProgress(videoId);
+  let startParam = '';
+
+  // Check if video was previously watched
+  if (progress && progress.currentTime > 5 && (durationSec === 0 || progress.currentTime < durationSec - 5)) {
+    startParam = `&start=${Math.floor(progress.currentTime)}`;
+    
+    // Show resume notification toast
+    if (dom.resumeToast && dom.resumeToastText) {
+      dom.resumeToastText.textContent = `Resumed from ${formatSeconds(progress.currentTime)}`;
+      dom.resumeToast.style.display = 'block';
+      setTimeout(() => {
+        if (dom.resumeToast) dom.resumeToast.style.display = 'none';
+      }, 4000);
+    }
+  } else {
+    if (dom.resumeToast) dom.resumeToast.style.display = 'none';
+  }
+
+  if (dom.videoIframe) {
+    dom.videoIframe.src = `${video.embedUrl}${startParam}`;
+  }
+
+  startWatchTracker(videoId, durationSec);
+
+  if (dom.playerVideoTitle) dom.playerVideoTitle.textContent = video.title;
+  if (dom.playerVideoViews) dom.playerVideoViews.textContent = `${video.views} views`;
+  if (dom.playerVideoUploaded) dom.playerVideoUploaded.textContent = video.uploadedAt;
+  if (dom.playerVideoCategory) dom.playerVideoCategory.textContent = video.category || 'General';
+  if (dom.playerLikesCount) dom.playerLikesCount.textContent = video.likes || 'Like';
+  
+  // Channel avatar & name
+  if (dom.playerChannelAvatar) {
+    const pAvatar = getChannelAvatar(video.channelId, channel?.avatar || video.channelAvatar, video.channelTitle);
+    dom.playerChannelAvatar.src = pAvatar;
+    dom.playerChannelAvatar.onerror = function() {
+      this.onerror = null;
+      this.src = getSvgAvatarDataUrl(video.channelTitle);
+    };
+  }
+  if (dom.playerChannelName) dom.playerChannelName.textContent = video.channelTitle;
+  if (dom.playerChannelSubs) dom.playerChannelSubs.textContent = `${video.subscriberCount || '1M'} subscribers`;
+  
+  const isSubscribed = state.subscriptions.has(video.channelId);
+  updatePlayerSubscribeButton(isSubscribed);
+
+  const isLiked = state.likedVideos.has(video.id) || video.isLiked;
+  if (dom.playerLikeBtn) dom.playerLikeBtn.classList.toggle('active', isLiked);
+
+  if (dom.playerDescription) {
+    dom.playerDescription.textContent = video.description || 'Enjoy uninterrupted viewing on AsiTube.';
+  }
+
+  renderComments(comments);
+  renderRelatedVideos(related);
+
+  if (dom.playerOverlay) {
+    dom.playerOverlay.style.display = 'block';
+    dom.playerOverlay.scrollTop = 0;
   }
 }
 
@@ -1320,19 +1491,19 @@ function closePlayer() {
 // Like Video Action
 async function handleLikeCurrentVideo() {
   if (!state.currentVideo) return;
-  try {
-    const res = await fetch(`/api/videos/${state.currentVideo.id}/like`, { method: 'POST' });
-    const data = await res.json();
-    if (data.isLiked) {
-      state.likedVideos.add(state.currentVideo.id);
-      if (dom.playerLikeBtn) dom.playerLikeBtn.classList.add('active');
-    } else {
-      state.likedVideos.delete(state.currentVideo.id);
-      if (dom.playerLikeBtn) dom.playerLikeBtn.classList.remove('active');
-    }
-  } catch (err) {
-    console.error('Error liking video:', err);
+  const vidId = state.currentVideo.id;
+  const currentlyLiked = state.likedVideos.has(vidId);
+  if (currentlyLiked) {
+    state.likedVideos.delete(vidId);
+    if (dom.playerLikeBtn) dom.playerLikeBtn.classList.remove('active');
+  } else {
+    state.likedVideos.add(vidId);
+    if (dom.playerLikeBtn) dom.playerLikeBtn.classList.add('active');
   }
+  persistLikes();
+  try {
+    await fetch(`/api/videos/${vidId}/like`, { method: 'POST' });
+  } catch (err) {}
 }
 
 // Render comments
@@ -1344,9 +1515,9 @@ function renderComments(comments) {
   comments.forEach(c => {
     const item = document.createElement('div');
     item.className = 'comment-item';
-    const avatar = c.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
+    const avatar = c.avatar || 'avatars/mrbeast.jpg';
     item.innerHTML = `
-      <img src="${avatar}" class="card-channel-avatar" style="width:32px; height:32px;" alt="${c.user}" onerror="this.onerror=null; this.src='https://yt3.googleusercontent.com/ytc/AIdro_n8-W7zGg=s176-c-k-c0x00ffffff-no-rj'">
+      <img src="${avatar}" class="card-channel-avatar" style="width:32px; height:32px;" alt="${c.user}" onerror="this.onerror=null; this.src='avatars/mkbhd.jpg'">
       <div>
         <div class="comment-header">
           <span class="comment-author">${c.user}</span>
@@ -1365,19 +1536,40 @@ async function postComment() {
   const text = dom.commentInput.value.trim();
   if (!text) return;
 
+  const newComment = {
+    id: 'c_' + Date.now(),
+    user: 'You (Mobile User)',
+    time: 'Just now',
+    text,
+    avatar: 'avatars/mrbeast.jpg'
+  };
+
+  const saved = JSON.parse(localStorage.getItem('asitube_comments_' + state.currentVideo.id) || '[]');
+  saved.unshift(newComment);
+  localStorage.setItem('asitube_comments_' + state.currentVideo.id, JSON.stringify(saved));
+
+  const item = document.createElement('div');
+  item.className = 'comment-item';
+  item.innerHTML = `
+    <div class="account-pfp small">A</div>
+    <div>
+      <div class="comment-header">
+        <span class="comment-author">${newComment.user}</span>
+        <span class="comment-time">${newComment.time}</span>
+      </div>
+      <div class="comment-text">${newComment.text}</div>
+    </div>
+  `;
+  if (dom.commentsList) dom.commentsList.prepend(item);
+  dom.commentInput.value = '';
+
   try {
-    const res = await fetch(`/api/videos/${state.currentVideo.id}/comments`, {
+    await fetch(`/api/videos/${state.currentVideo.id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, user: 'Account User' })
+      body: JSON.stringify({ text, user: 'You (Mobile User)' })
     });
-    const data = await res.json();
-    if (data.comment) {
-      dom.commentInput.value = '';
-    }
-  } catch (err) {
-    console.error('Error posting comment:', err);
-  }
+  } catch (err) {}
 }
 
 // Render Related / Up Next Videos with real thumbnails
