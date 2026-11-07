@@ -65,6 +65,8 @@ const dom = {
   
   playerOverlay: document.getElementById('playerOverlay'),
   playerCloseBtn: document.getElementById('playerCloseBtn'),
+  playerRotateBtn: document.getElementById('playerRotateBtn'),
+  videoFrameWrapper: document.getElementById('videoFrameWrapper'),
   videoIframe: document.getElementById('videoIframe'),
   playerVideoTitle: document.getElementById('playerVideoTitle'),
   playerVideoViews: document.getElementById('playerVideoViews'),
@@ -188,10 +190,30 @@ document.addEventListener('DOMContentLoaded', () => {
   loadChannels();
   loadVideos();
   loadPlaylists();
+
+  // Automatic live YouTube sync on startup
+  setTimeout(() => {
+    syncLatestYouTubeUploads(false);
+  }, 1200);
+
+  // Periodic YouTube sync every 60s
+  setInterval(() => {
+    syncLatestYouTubeUploads(false);
+  }, 60000);
 });
 
 // Load saved subscriptions, likes, history, playlists and watch progress from LocalStorage
 function initStorageState() {
+  try {
+    const savedVideos = localStorage.getItem('asitube_cached_videos');
+    if (savedVideos) {
+      const parsed = JSON.parse(savedVideos);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        state.videos = parsed;
+      }
+    }
+  } catch (e) {}
+
   try {
     const savedSubs = localStorage.getItem('asitube_subscriptions');
     if (savedSubs) {
@@ -482,7 +504,37 @@ function initEventListeners() {
 
   // Player controls
   if (dom.playerCloseBtn) dom.playerCloseBtn.addEventListener('click', closePlayer);
+  if (dom.playerRotateBtn) dom.playerRotateBtn.addEventListener('click', toggleLandscapeMode);
   if (dom.playerLikeBtn) dom.playerLikeBtn.addEventListener('click', handleLikeCurrentVideo);
+
+  // Fullscreen change listener for auto landscape rotation
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+  // Android hardware back button handler
+  window.handleAndroidBack = function() {
+    if (dom.playerOverlay && dom.playerOverlay.classList.contains('landscape-mode')) {
+      toggleLandscapeMode();
+      return true;
+    }
+    if (dom.playerOverlay && dom.playerOverlay.style.display !== 'none') {
+      closePlayer();
+      return true;
+    }
+    if (dom.manageSubsModal && dom.manageSubsModal.style.display !== 'none') {
+      dom.manageSubsModal.style.display = 'none';
+      return true;
+    }
+    if (dom.savePlaylistModal && dom.savePlaylistModal.style.display !== 'none') {
+      dom.savePlaylistModal.style.display = 'none';
+      return true;
+    }
+    if (state.currentView !== 'home') {
+      switchView('home');
+      return true;
+    }
+    return false;
+  };
 
   if (dom.playerSubscribeBtn) {
     dom.playerSubscribeBtn.addEventListener('click', () => {
@@ -926,38 +978,39 @@ function stopWatchTracker() {
 
 // Load Videos for Home Feed
 async function loadVideos() {
+  if (state.searchQuery) {
+    await performUniversalYouTubeSearch(state.searchQuery);
+    return;
+  }
+
+  let vids = [];
   try {
-    let url = `/api/videos?category=${encodeURIComponent(state.activeCategory)}`;
-    if (state.searchQuery) {
-      url = `/api/search?q=${encodeURIComponent(state.searchQuery)}`;
-    }
-    const res = await fetch(url);
+    const res = await fetch(`/api/videos?category=${encodeURIComponent(state.activeCategory)}`);
     if (res.ok) {
       const data = await res.json();
-      state.videos = data.videos || [];
+      vids = data.videos || [];
     } else {
       throw new Error('Offline fallback');
     }
   } catch (err) {
-    if (window.ASI_DATA && window.ASI_DATA.initialVideos) {
-      let vids = JSON.parse(JSON.stringify(window.ASI_DATA.initialVideos));
-      if (state.searchQuery) {
-        const q = state.searchQuery.toLowerCase();
+    const baseList = (state.videos && state.videos.length > 0)
+      ? state.videos
+      : (window.ASI_DATA?.initialVideos || []);
+    vids = JSON.parse(JSON.stringify(baseList));
+
+    if (state.activeCategory && state.activeCategory !== 'All') {
+      if (state.activeCategory === 'Recently Uploaded') {
+        vids = vids.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      } else {
         vids = vids.filter(v =>
-          (v.title && v.title.toLowerCase().includes(q)) ||
-          (v.channelTitle && v.channelTitle.toLowerCase().includes(q)) ||
-          (v.tags && v.tags.some(t => t.toLowerCase().includes(q)))
+          (v.category && v.category.toLowerCase() === state.activeCategory.toLowerCase()) ||
+          (v.tags && v.tags.some(t => t.toLowerCase() === state.activeCategory.toLowerCase()))
         );
-      } else if (state.activeCategory && state.activeCategory !== 'All') {
-        if (state.activeCategory === 'Recently Uploaded') {
-          vids = vids.sort((a, b) => b.timestamp - a.timestamp);
-        } else {
-          vids = vids.filter(v => v.category?.toLowerCase() === state.activeCategory.toLowerCase() || (v.tags && v.tags.some(t => t.toLowerCase() === state.activeCategory.toLowerCase())));
-        }
       }
-      state.videos = vids;
     }
   }
+
+  state.videos = vids;
 
   if (dom.videoCountBadge) {
     dom.videoCountBadge.textContent = `${state.videos.length} videos`;
@@ -1398,8 +1451,15 @@ async function openPlayer(videoId) {
   }
 
   if (!video.embedUrl) {
-    video.embedUrl = `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&enablejsapi=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1`;
+    video.embedUrl = `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&enablejsapi=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&fs=1`;
   }
+
+  // Ensure initial portrait controls
+  if (dom.playerOverlay) {
+    dom.playerOverlay.classList.remove('landscape-mode');
+  }
+  const rotateTxt = document.getElementById('playerRotateText');
+  if (rotateTxt) rotateTxt.textContent = 'Landscape';
 
   state.currentVideo = video;
 
@@ -1477,8 +1537,21 @@ async function openPlayer(videoId) {
 function closePlayer() {
   stopWatchTracker();
   if (dom.playerOverlay) {
+    dom.playerOverlay.classList.remove('landscape-mode');
     dom.playerOverlay.style.display = 'none';
   }
+  if (window.AndroidBridge && window.AndroidBridge.forcePortrait) {
+    window.AndroidBridge.forcePortrait();
+  }
+  const rotateTxt = document.getElementById('playerRotateText');
+  if (rotateTxt) rotateTxt.textContent = 'Landscape';
+
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  } catch (e) {}
+
   if (dom.videoIframe) {
     dom.videoIframe.src = '';
   }
@@ -1599,35 +1672,490 @@ function renderRelatedVideos(related) {
   });
 }
 
-// Trigger Live Sync with YouTube (Small button)
-async function triggerSync() {
+// ==========================================================
+// LANDSCAPE / FULLSCREEN THEATER MODE CONTROLLER
+// ==========================================================
+let isTogglingFullscreen = false;
+
+function toggleLandscapeMode() {
+  const overlay = dom.playerOverlay;
+  if (!overlay) return;
+
+  const isLandscape = overlay.classList.contains('landscape-mode');
+  isTogglingFullscreen = true;
+  setTimeout(() => { isTogglingFullscreen = false; }, 600);
+
+  if (!isLandscape) {
+    overlay.classList.add('landscape-mode');
+    const txt = document.getElementById('playerRotateText');
+    if (txt) txt.textContent = 'Portrait';
+
+    if (window.AndroidBridge && window.AndroidBridge.forceLandscape) {
+      window.AndroidBridge.forceLandscape();
+    } else {
+      try {
+        if (dom.videoFrameWrapper && dom.videoFrameWrapper.requestFullscreen) {
+          dom.videoFrameWrapper.requestFullscreen().catch(() => {});
+        }
+      } catch (e) {}
+    }
+  } else {
+    overlay.classList.remove('landscape-mode');
+    const txt = document.getElementById('playerRotateText');
+    if (txt) txt.textContent = 'Landscape';
+
+    if (window.AndroidBridge && window.AndroidBridge.forcePortrait) {
+      window.AndroidBridge.forcePortrait();
+    } else {
+      try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      } catch (e) {}
+    }
+  }
+}
+
+function handleFullscreenChange() {
+  if (isTogglingFullscreen) return;
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (dom.playerOverlay) {
+    if (isFs) {
+      dom.playerOverlay.classList.add('landscape-mode');
+      if (window.AndroidBridge && window.AndroidBridge.forceLandscape) {
+        window.AndroidBridge.forceLandscape();
+      }
+      const txt = document.getElementById('playerRotateText');
+      if (txt) txt.textContent = 'Portrait';
+    } else {
+      dom.playerOverlay.classList.remove('landscape-mode');
+      if (window.AndroidBridge && window.AndroidBridge.forcePortrait) {
+        window.AndroidBridge.forcePortrait();
+      }
+      const txt = document.getElementById('playerRotateText');
+      if (txt) txt.textContent = 'Landscape';
+    }
+  }
+}
+
+// Utility: format relative time
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return 'Recently';
+  const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
+  return `${Math.floor(diffSec / 604800)}w ago`;
+}
+
+// Utility: HTML escape
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Visual feedback toast
+function showToast(message) {
+  let toast = document.getElementById('syncToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'syncToast';
+    toast.className = 'sync-status-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.display = 'flex';
+  setTimeout(() => {
+    if (toast) toast.style.display = 'none';
+  }, 3500);
+}
+
+// Render search channel creator banner
+function renderSearchChannelCard(channel) {
+  if (!dom.videoGrid) return;
+  const isSubbed = state.subscriptions.has(channel.channelId);
+  const card = document.createElement('div');
+  card.className = 'search-channel-card';
+
+  const avatarUrl = channel.channelAvatar || getSvgAvatarDataUrl(channel.channelTitle);
+
+  card.innerHTML = `
+    <img src="${avatarUrl}" class="search-channel-avatar" alt="${escapeHtml(channel.channelTitle)}" onerror="this.onerror=null; this.src='${getSvgAvatarDataUrl(channel.channelTitle)}';">
+    <div class="search-channel-info">
+      <div class="search-channel-title">
+        ${escapeHtml(channel.channelTitle)}
+        <span class="search-channel-badge">Creator</span>
+      </div>
+      <div class="search-channel-meta">
+        ${channel.subscriberCount ? `${escapeHtml(channel.subscriberCount)} subscribers • ` : ''}
+        ${channel.videoCount ? escapeHtml(channel.videoCount) : 'YouTube Channel'}
+      </div>
+      <div class="search-channel-desc">${escapeHtml(channel.description || 'Verified YouTube Creator')}</div>
+    </div>
+    <button class="search-channel-sub-btn ${isSubbed ? 'subscribed' : ''}" data-channel="${channel.channelId}">
+      ${isSubbed ? 'Subscribed' : 'Subscribe'}
+    </button>
+  `;
+
+  const btn = card.querySelector('.search-channel-sub-btn');
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSubscription(channel.channelId);
+    const nowSubbed = state.subscriptions.has(channel.channelId);
+    btn.classList.toggle('subscribed', nowSubbed);
+    btn.textContent = nowSubbed ? 'Subscribed' : 'Subscribe';
+  });
+
+  card.addEventListener('click', () => {
+    state.selectedCreatorId = channel.channelId;
+    switchView('subscriptions');
+  });
+
+  dom.videoGrid.prepend(card);
+}
+
+// Parse YouTube search HTML response
+function parseYouTubeResultsHtml(html) {
+  if (!html) return [];
+  const results = [];
+  try {
+    const jsonMatch = html.match(/var ytInitialData = ({.*?});<\/script>/) ||
+                      html.match(/ytInitialData\s*=\s*({.+?});/);
+    if (!jsonMatch) return [];
+
+    const data = JSON.parse(jsonMatch[1]);
+    const sectionList = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+
+    for (const section of sectionList) {
+      const contents = section.itemSectionRenderer?.contents || [];
+      for (const item of contents) {
+        if (item.videoRenderer) {
+          const vr = item.videoRenderer;
+          if (vr.videoId) {
+            const thumb = vr.thumbnail?.thumbnails?.[vr.thumbnail.thumbnails.length - 1]?.url ||
+                          `https://i.ytimg.com/vi/${vr.videoId}/hqdefault.jpg`;
+            const avatar = vr.channelThumbnailSupportedRenderers?.channelThumbnailWithLinkRenderer?.thumbnail?.thumbnails?.[0]?.url || '';
+            const channelName = vr.ownerText?.runs?.[0]?.text || vr.longBylineText?.runs?.[0]?.text || 'Creator';
+            const channelId = vr.ownerText?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || 'youtube';
+
+            results.push({
+              id: vr.videoId,
+              title: vr.title?.runs?.[0]?.text || 'YouTube Video',
+              channelId: channelId,
+              channelTitle: channelName,
+              channelAvatar: avatar,
+              thumbnail: thumb,
+              views: vr.viewCountText?.simpleText || vr.shortViewCountText?.simpleText || 'Popular',
+              uploadedAt: vr.publishedTimeText?.simpleText || 'Recently',
+              timestamp: Date.now(),
+              duration: vr.lengthText?.simpleText || 'Video',
+              category: 'YouTube Search',
+              isNew: false,
+              likes: 'Like'
+            });
+          }
+        } else if (item.channelRenderer) {
+          const cr = item.channelRenderer;
+          const chId = cr.channelId;
+          const title = cr.title?.simpleText || cr.title?.runs?.[0]?.text || 'Channel';
+          const avatar = cr.thumbnail?.thumbnails?.[cr.thumbnail.thumbnails.length - 1]?.url || '';
+          const subCount = cr.subscriberCountText?.simpleText || '';
+          const vidCount = cr.videoCountText?.simpleText || '';
+
+          results.unshift({
+            id: 'channel_' + chId,
+            isChannelResult: true,
+            channelId: chId,
+            channelTitle: title,
+            channelAvatar: avatar,
+            subscriberCount: subCount,
+            videoCount: vidCount,
+            description: cr.descriptionSnippet?.runs?.map(r => r.text).join('') || ''
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error parsing YouTube HTML:', err);
+  }
+  return results;
+}
+
+// Real-Time Universal YouTube Search
+async function performUniversalYouTubeSearch(query) {
+  if (!dom.videoGrid) return;
+  dom.videoGrid.innerHTML = `
+    <div style="grid-column: 1 / -1; text-align: center; padding: 48px 16px;">
+      <div class="sync-icon spinning" style="font-size: 28px; margin-bottom: 12px; display: inline-block;">🔍</div>
+      <h3 style="color: #fff; font-size: 16px;">Searching YouTube for "${escapeHtml(query)}"...</h3>
+      <p style="color: #888; font-size: 13px; margin-top: 4px;">Fetching live YouTube creators and videos</p>
+    </div>
+  `;
+
+  let results = [];
+
+  // 1. Android Native Bridge (Zero CORS)
+  if (window.AndroidBridge && window.AndroidBridge.fetchUrl) {
+    try {
+      const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      const html = window.AndroidBridge.fetchUrl(ytUrl);
+      if (html) {
+        results = parseYouTubeResultsHtml(html);
+      }
+    } catch (e) {
+      console.warn('Native YouTube search error:', e);
+    }
+  }
+
+  // 2. Node.js backend or WebView intercepted API
+  if (!results || results.length === 0) {
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const text = await res.text();
+        try {
+          const json = JSON.parse(text);
+          results = json.videos || [];
+          if (json.channels && json.channels.length > 0) {
+            json.channels.forEach(ch => {
+              results.unshift({
+                id: 'channel_' + ch.id,
+                isChannelResult: true,
+                channelId: ch.id,
+                channelTitle: ch.title,
+                channelAvatar: ch.avatar,
+                subscriberCount: ch.subscriberCount,
+                videoCount: `${ch.videoCount || 500}+ videos`,
+                description: ch.description
+              });
+            });
+          }
+        } catch (e) {
+          results = parseYouTubeResultsHtml(text);
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 3. Public CORS / Invidious fallback
+  if (!results || results.length === 0) {
+    try {
+      const endpoints = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.youtube.com/results?search_query=' + query)}`,
+        `https://yewtu.be/api/v1/search?q=${encodeURIComponent(query)}`,
+        `https://invidious.jing.rocks/api/v1/search?q=${encodeURIComponent(query)}`
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const cRes = await fetch(endpoint, { signal: AbortSignal.timeout(3500) });
+          if (cRes.ok) {
+            const raw = await cRes.text();
+            if (raw.includes('ytInitialData') || raw.includes('<!DOCTYPE html>')) {
+              results = parseYouTubeResultsHtml(raw);
+            } else {
+              const data = JSON.parse(raw);
+              if (Array.isArray(data)) {
+                results = data.map(item => ({
+                  id: item.videoId,
+                  title: item.title,
+                  channelId: item.authorId || item.author,
+                  channelTitle: item.author,
+                  channelAvatar: item.authorThumbnails?.[0]?.url || '',
+                  thumbnail: item.videoThumbnails?.[item.videoThumbnails.length - 1]?.url || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+                  views: item.viewCount ? item.viewCount.toLocaleString() : 'Popular',
+                  uploadedAt: item.publishedText || 'Recently',
+                  duration: item.lengthSeconds ? formatSeconds(item.lengthSeconds) : 'Video',
+                  category: 'YouTube Search',
+                  isNew: false,
+                  likes: 'Like'
+                }));
+              }
+            }
+            if (results.length > 0) break;
+          }
+        } catch (err) {}
+      }
+    } catch (e) {}
+  }
+
+  // 4. Local catalog fallback if completely offline
+  if (!results || results.length === 0) {
+    const qLower = query.toLowerCase();
+    const all = (state.videos && state.videos.length > 0) ? state.videos : (window.ASI_DATA?.initialVideos || []);
+    results = all.filter(v =>
+      (v.title && v.title.toLowerCase().includes(qLower)) ||
+      (v.channelTitle && v.channelTitle.toLowerCase().includes(qLower)) ||
+      (v.tags && v.tags.some(t => t.toLowerCase().includes(qLower)))
+    );
+  }
+
+  const channelResults = results.filter(r => r.isChannelResult);
+  const videoResults = results.filter(r => !r.isChannelResult);
+
+  // Check if query matches a known channel
+  const chLower = query.toLowerCase();
+  const matchedChannel = state.channels.find(c =>
+    c.title.toLowerCase().includes(chLower) || c.id.toLowerCase() === chLower
+  );
+
+  if (videoResults.length === 0 && channelResults.length === 0 && !matchedChannel) {
+    dom.videoGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 48px 16px; background: rgba(255,255,255,0.03); border-radius: 16px;">
+        <h3 style="color: #fff; font-size: 16px; margin-bottom: 8px;">No videos found for "${escapeHtml(query)}"</h3>
+        <p style="color: #888; font-size: 13px; margin-bottom: 16px;">Check your spelling, try another keyword, or paste a YouTube video link.</p>
+        <button class="btn-primary-action" onclick="state.searchQuery=''; if(dom.searchInput) dom.searchInput.value=''; loadVideos();">Back to Home Feed</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Render video results first
+  renderVideoGrid(dom.videoGrid, videoResults);
+
+  // Prepend Creator Channel Card if searching for a YouTuber
+  if (channelResults.length > 0) {
+    channelResults.reverse().forEach(ch => renderSearchChannelCard(ch));
+  } else if (matchedChannel) {
+    renderSearchChannelCard({
+      channelId: matchedChannel.id,
+      channelTitle: matchedChannel.title,
+      channelAvatar: matchedChannel.avatar,
+      subscriberCount: matchedChannel.subscriberCount,
+      videoCount: `${matchedChannel.videoCount || 500}+ videos`,
+      description: matchedChannel.description
+    });
+  }
+
+  if (dom.videoCountBadge) {
+    dom.videoCountBadge.textContent = `${videoResults.length} YouTube results`;
+  }
+}
+
+// Real-Time Live YouTube Sync across Creator Feeds
+async function syncLatestYouTubeUploads(showFeedback = true) {
   if (state.isSyncing) return;
   state.isSyncing = true;
 
   if (dom.syncIcon) dom.syncIcon.classList.add('spinning');
+  if (showFeedback) showToast('⚡ Syncing latest uploads directly from YouTube...');
+
+  const newlyDiscovered = [];
+  const channelsToSync = state.channels.filter(c => c.ytChannelId);
+
+  for (const channel of channelsToSync) {
+    try {
+      const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.ytChannelId}`;
+      let xmlText = null;
+
+      if (window.AndroidBridge && window.AndroidBridge.fetchUrl) {
+        xmlText = window.AndroidBridge.fetchUrl(feedUrl);
+      }
+
+      if (!xmlText) {
+        try {
+          const res = await fetch(`/api/proxy?url=${encodeURIComponent(feedUrl)}`);
+          if (res.ok) xmlText = await res.text();
+        } catch (e) {}
+      }
+
+      if (!xmlText) {
+        try {
+          const cRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`, {
+            signal: AbortSignal.timeout(3000)
+          });
+          if (cRes.ok) xmlText = await cRes.text();
+        } catch (e) {}
+      }
+
+      if (xmlText && xmlText.includes('<entry>')) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        const entries = xmlDoc.querySelectorAll('entry');
+
+        entries.forEach(entry => {
+          const vidIdNode = entry.querySelector('videoId') || entry.querySelector('yt\\:videoId');
+          const vidId = vidIdNode ? vidIdNode.textContent : null;
+          const title = entry.querySelector('title')?.textContent;
+          const published = entry.querySelector('published')?.textContent;
+
+          if (vidId && title && !state.videos.some(v => v.id === vidId)) {
+            const newVid = {
+              id: vidId,
+              title: title.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'"),
+              channelId: channel.id,
+              channelTitle: channel.title,
+              channelAvatar: channel.avatar,
+              subscriberCount: channel.subscriberCount,
+              description: `Latest real-time YouTube upload from ${channel.title}.`,
+              thumbnail: `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`,
+              views: 'New Upload',
+              uploadedAt: formatTimeAgo(new Date(published).getTime()),
+              timestamp: new Date(published).getTime(),
+              duration: 'NEW',
+              category: 'Recently Uploaded',
+              isNew: true,
+              likes: '1.2K'
+            };
+            newlyDiscovered.push(newVid);
+            state.videos.unshift(newVid);
+            addNotification(newVid);
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('Sync failed for channel:', channel.title, err);
+    }
+  }
+
+  // Also query server sync if available
+  try {
+    const sRes = await fetch('/api/sync');
+    if (sRes.ok) {
+      const sData = await sRes.json();
+      if (sData.newVideos && sData.newVideos.length > 0) {
+        sData.newVideos.forEach(v => {
+          if (!state.videos.some(x => x.id === v.id)) {
+            state.videos.unshift(v);
+            newlyDiscovered.push(v);
+            addNotification(v);
+          }
+        });
+      }
+    }
+  } catch (e) {}
+
+  state.lastSyncTime = Date.now();
+  state.isSyncing = false;
+  if (dom.syncIcon) dom.syncIcon.classList.remove('spinning');
 
   try {
-    const res = await fetch('/api/sync');
-    const data = await res.json();
-    state.lastSyncTime = Date.now();
+    localStorage.setItem('asitube_cached_videos', JSON.stringify(state.videos));
+  } catch (e) {}
 
-    if (data.newVideos && data.newVideos.length > 0) {
-      data.newVideos.forEach(v => addNotification(v));
-    }
-
-    if (state.currentView === 'subscriptions') {
-      loadSubscriptionsFeed();
+  if (showFeedback) {
+    if (newlyDiscovered.length > 0) {
+      showToast(`🔥 Synced! ${newlyDiscovered.length} new videos found from YouTube creators.`);
     } else {
-      loadVideos();
+      showToast(`✅ YouTube Feeds are up to date! (${state.videos.length} videos available)`);
     }
-  } catch (err) {
-    console.error('Error during YouTube sync:', err);
-  } finally {
-    setTimeout(() => {
-      if (dom.syncIcon) dom.syncIcon.classList.remove('spinning');
-      state.isSyncing = false;
-    }, 700);
   }
+
+  if (state.currentView === 'subscriptions') {
+    loadSubscriptionsFeed();
+  } else if (!state.searchQuery) {
+    renderVideoGrid(dom.videoGrid, state.videos);
+  }
+}
+
+// Trigger Live Sync with YouTube (Button)
+async function triggerSync() {
+  await syncLatestYouTubeUploads(true);
 }
 
 // Handle Real-Time Search

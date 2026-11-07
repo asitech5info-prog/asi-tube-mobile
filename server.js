@@ -246,6 +246,23 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
+  // --- Proxy endpoint for YouTube RSS / XML feeds ---
+  if (method === 'GET' && pathname === '/api/proxy') {
+    const targetUrl = parsedUrl.query.url;
+    if (!targetUrl) return sendJSON(res, 400, { error: 'Missing url query param' });
+    try {
+      const response = await fetch(targetUrl);
+      const text = await response.text();
+      res.writeHead(200, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(text);
+    } catch (e) {
+      return sendJSON(res, 500, { error: e.message });
+    }
+  }
+
   // --- 1. Real-Time Server-Sent Events (SSE) Stream ---
   if (method === 'GET' && pathname === '/api/events') {
     res.writeHead(200, {

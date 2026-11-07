@@ -56,23 +56,24 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
       with:
-        tag_name: v1.1.0
-        name: "asi tube mobile v1.1.0 - Professional Android Release"
+        tag_name: v1.2.0
+        name: "asi tube mobile v1.2.0 - Landscape Rotation & Live YouTube Search"
         body: |
-          ## 🎬 asi tube mobile v1.1.0 (Professional Release)
+          ## 🎬 asi tube mobile v1.2.0 (Official Update)
           Official updated Android release for **asi tube mobile**!
 
-          ### 📲 Download:
-          Download `asi-tube-mobile.apk` below and install it directly on your Android device.
+          ### 📲 Download APK:
+          Download `asi-tube-mobile.apk` (or `asi-tube-v1.0.apk`) below and install it directly on your Android device.
 
-          ### ✨ Updates & Fixes in v1.1.0:
-          - 🎨 **Fixed UI Styling**: Integrated `WebViewAssetLoader` and relative stylesheet linking so AMOLED dark theme, video cards, and bottom navigation render crisply without layout glitches.
-          - ⚡ **Standalone Offline Mode**: Preloaded creators and catalog channels (MrBeast, MKBHD, Fireship, Rockstar Games, etc.) work without a local PC server.
-          - 📺 **Ad-Free Embedded Player**: Stream any YouTube video ad-free with smart second resume.
-          - 👥 **Subscriptions & Playlists**: Dedicated Subscriptions feed, Watch Later, and custom playlists persisted in storage.
+          ### ✨ Updates & Fixes in v1.2.0:
+          - 🔄 **Forced Landscape Fullscreen**: Tapping fullscreen or the dedicated rotate button forces phone into horizontal landscape mode, automatically restoring portrait on exit or back button.
+          - 🔍 **Universal YouTube & Creator Search**: Search for any YouTuber (e.g. *Ducky Bhai*, *MrBeast*, *MKBHD*) or video topic with live channel banners and real YouTube video results.
+          - ⚡ **Real-Time YouTube RSS Sync**: Subscriptions automatically pull live uploads directly from YouTube creator feeds with zero external backend requirements.
+          - 📱 **AMOLED Dark Theater Mode**: Seamless fullscreen viewing with zero ads.
         files: release-artifacts/*.apk
         draft: false
         prerelease: false
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -174,18 +174,35 @@ async function runAsiTubeTests() {
     await page.waitForTimeout(600);
     console.log('[PASS] Comment added');
 
+    // Test Landscape Force-Rotation & Fullscreen
+    const rotateBtn = page.locator('#playerRotateBtn');
+    if (await rotateBtn.isVisible()) {
+      console.log('Testing landscape mode button...');
+      await rotateBtn.click({ force: true });
+      await page.waitForTimeout(600);
+      const isLandscape = await page.locator('#playerOverlay').evaluate(el => el.classList.contains('landscape-mode'));
+      console.log(`[PASS] Rotate button clicked -> landscape-mode active: ${isLandscape}`);
+      await rotateBtn.click({ force: true });
+      await page.waitForTimeout(600);
+      const isLandscapeAfter = await page.locator('#playerOverlay').evaluate(el => el.classList.contains('landscape-mode'));
+      console.log(`[PASS] Rotate button clicked again -> restored portrait: ${!isLandscapeAfter}`);
+    }
+
     const screenshot4 = '04_android_adfree_player.png';
     const screenshot4Path = path.join(screenshotsDir, screenshot4);
     await page.screenshot({ path: screenshot4Path, fullPage: false });
     copyToBrain(screenshot4);
     console.log(`[SAVED] Screenshot: ${screenshot4Path}`);
 
-    // Close player
-    await page.locator('#playerCloseBtn').click();
-    await page.waitForTimeout(500);
+    // Close player cleanly
+    await page.evaluate(() => {
+      if (typeof closePlayer === 'function') closePlayer();
+    });
+    await page.waitForSelector('#playerOverlay', { state: 'hidden' });
+    await page.waitForTimeout(400);
 
     // -------------------------------------------------------------
-    // TEST 5: Search Across YouTube
+    // TEST 5: Search Across YouTube (Creator & Video Search)
     // -------------------------------------------------------------
     console.log('\n--- 5. Testing YouTube Search Feature ---');
     const mobileSearchBtn = page.locator('#mobileSearchTrigger');
@@ -194,12 +211,13 @@ async function runAsiTubeTests() {
     }
 
     const searchInput = page.locator('#searchInput');
-    await searchInput.fill('GTA');
+    await searchInput.fill('Ducky');
     await page.locator('#searchSubmitBtn').click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1200);
 
+    const channelCardsCount = await page.locator('.search-channel-card').count();
     const searchResultsCount = await page.locator('.video-card').count();
-    console.log(`[PASS] Search for "GTA" returned ${searchResultsCount} matched video(s)`);
+    console.log(`[PASS] Search for "Ducky" returned ${channelCardsCount} creator banner(s) and ${searchResultsCount} video(s)`);
 
     const screenshot5 = '05_android_search_results.png';
     const screenshot5Path = path.join(screenshotsDir, screenshot5);

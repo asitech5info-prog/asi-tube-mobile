@@ -88,6 +88,17 @@
       videoCount: 4700,
       description: "I make videos on the internet.",
       subscribed: false
+    },
+    {
+      id: "duckybhai",
+      ytChannelId: "UC9C39nOQx-r4wT3uJmR0s_w",
+      title: "Ducky Bhai",
+      avatar: "avatars/duckybhai.jpg",
+      subscriberCount: "8.5M",
+      subscribersNumber: 8500000,
+      videoCount: 650,
+      description: "Daily life, fun, and challenges with Ducky Bhai and family.",
+      subscribed: true
     }
   ];
 
@@ -235,6 +246,132 @@
       isNew: false,
       likes: "245,100",
       tags: ["iPad", "Apple", "MKBHD", "Tech"]
+    },
+    {
+      id: "7tN4hM6p41Q",
+      title: "We Need Your Prayers 🙏 | Pishu Is in Critical Condition ❤️",
+      channelId: "duckybhai",
+      channelTitle: "Ducky Bhai",
+      channelAvatar: "avatars/duckybhai.jpg",
+      subscriberCount: "8.5M",
+      description: "An emotional vlog update for our family and supporters. Keep Pishu in your prayers.",
+      thumbnail: "https://i.ytimg.com/vi/7tN4hM6p41Q/hqdefault.jpg",
+      views: "684K",
+      uploadedAt: "18 hours ago",
+      timestamp: Date.now() - 18 * 3600 * 1000,
+      duration: "9:35",
+      category: "Vlogs",
+      isNew: true,
+      likes: "24K",
+      tags: ["DuckyBhai", "Vlog", "Ducky", "Family"]
+    },
+    {
+      id: "bHIhgxav9LY",
+      title: "The Simplest Math Problem No One Can Solve - Collatz Conjecture",
+      channelId: "veritasium",
+      channelTitle: "Veritasium",
+      channelAvatar: "avatars/veritasium.jpg",
+      subscriberCount: "16.4M",
+      description: "The 3n+1 problem, or Collatz conjecture, is famous for being simple to explain but impossible to prove.",
+      thumbnail: "https://i.ytimg.com/vi/bHIhgxav9LY/hqdefault.jpg",
+      views: "41,029,190",
+      uploadedAt: "1 week ago",
+      timestamp: Date.now() - 7 * 24 * 3600 * 1000,
+      duration: "22:04",
+      category: "Science",
+      isNew: false,
+      likes: "1.2M",
+      tags: ["Veritasium", "Math", "Science"]
+    },
+    {
+      id: "uD4izuDMUQA",
+      title: "The Last Human on Earth - Optimistic Nihilism",
+      channelId: "kurzgesagt",
+      channelTitle: "Kurzgesagt – In a Nutshell",
+      channelAvatar: "avatars/kurzgesagt.jpg",
+      subscriberCount: "22.5M",
+      description: "What will the universe look like after humans are gone? Let's take a journey across deep time.",
+      thumbnail: "https://i.ytimg.com/vi/uD4izuDMUQA/hqdefault.jpg",
+      views: "18,920,400",
+      uploadedAt: "5 days ago",
+      timestamp: Date.now() - 5 * 24 * 3600 * 1000,
+      duration: "11:20",
+      category: "Science",
+      isNew: false,
+      likes: "890K",
+      tags: ["Kurzgesagt", "Universe", "Science", "Animation"]
+    },
+    {
+      id: "jfKfPfyJRdk",
+      title: "lofi hip hop radio 📚 - beats to relax/study to",
+      channelId: "lofigirl",
+      channelTitle: "Lofi Girl",
+      channelAvatar: "avatars/lofigirl.jpg",
+      subscriberCount: "14.3M",
+      description: "Peaceful lofi hip hop radio stream 24/7. Perfect for studying, relaxing, coding, or sleeping.",
+      thumbnail: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
+      views: "Live 24/7",
+      uploadedAt: "Streaming Now",
+      timestamp: Date.now(),
+      duration: "LIVE",
+      category: "Music",
+      isNew: true,
+      likes: "6.8M",
+      tags: ["Lofi", "Music", "Chill", "Study", "Relax"]
+    },
+    {
+      id: "i_r5vU_iH1Q",
+      title: "I Spent 100 Days in Japan Minecraft Hardcore",
+      channelId: "pewdiepie",
+      channelTitle: "PewDiePie",
+      channelAvatar: "avatars/pewdiepie.jpg",
+      subscriberCount: "111M",
+      description: "Surviving 100 days in custom Japan Minecraft world in ultra hardcore mode!",
+      thumbnail: "https://i.ytimg.com/vi/i_r5vU_iH1Q/hqdefault.jpg",
+      views: "9,820,410",
+      uploadedAt: "3 days ago",
+      timestamp: Date.now() - 3 * 24 * 3600 * 1000,
+      duration: "32:14",
+      category: "Gaming",
+      isNew: false,
+      likes: "612K",
+      tags: ["PewDiePie", "Minecraft", "Hardcore", "Gaming"]
+    },
+    {
+      id: "0e3GPea1Tyg",
+      title: "$456,000 Squid Game In Real Life!",
+      channelId: "mrbeast",
+      channelTitle: "MrBeast",
+      channelAvatar: "avatars/mrbeast.jpg",
+      subscriberCount: "318M",
+      description: "456 people compete for $456,000 in a real-life Squid Game recreation!",
+      thumbnail: "https://i.ytimg.com/vi/0e3GPea1Tyg/hqdefault.jpg",
+      views: "610,920,450",
+      uploadedAt: "Popular",
+      timestamp: Date.now() - 30 * 24 * 3600 * 1000,
+      duration: "25:41",
+      category: "Trending",
+      isNew: false,
+      likes: "17M",
+      tags: ["MrBeast", "SquidGame", "Trending", "Challenge"]
+    },
+    {
+      id: "V4vceTrrTew",
+      title: "The Blind Smartphone Camera Test 2024!",
+      channelId: "mkbhd",
+      channelTitle: "Marques Brownlee",
+      channelAvatar: "avatars/mkbhd.jpg",
+      subscriberCount: "19.1M",
+      description: "Over 20 million votes cast across every major phone camera on the market. Here are the winners.",
+      thumbnail: "https://i.ytimg.com/vi/V4vceTrrTew/hqdefault.jpg",
+      views: "8,920,110",
+      uploadedAt: "4 days ago",
+      timestamp: Date.now() - 4 * 24 * 3600 * 1000,
+      duration: "15:20",
+      category: "Tech",
+      isNew: false,
+      likes: "490K",
+      tags: ["MKBHD", "Camera", "Smartphone", "Tech"]
     }
   ];
 
@@ -257,3 +394,4 @@
     module.exports = ASI_DATA;
   }
 })();
+
