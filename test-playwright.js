@@ -225,6 +225,66 @@ async function runAsiTubeTests() {
     copyToBrain(screenshot5);
     console.log(`[SAVED] Screenshot: ${screenshot5Path}`);
 
+    // -------------------------------------------------------------
+    // TEST 5.1: Mobile Hamburger Drawer Navigation
+    // -------------------------------------------------------------
+    console.log('\n--- 5.1 Testing Mobile Hamburger Drawer ---');
+    const menuBtn = page.locator('#menuToggleBtn');
+    await menuBtn.click();
+    await page.waitForTimeout(400);
+
+    const isSidebarOpen = await page.locator('#appSidebar').evaluate(el => el.classList.contains('mobile-open'));
+    const isBackdropActive = await page.locator('#sidebarBackdrop').evaluate(el => el.classList.contains('active'));
+    console.log(`[PASS] Hamburger clicked -> mobile drawer open: ${isSidebarOpen}, backdrop active: ${isBackdropActive}`);
+
+    const closeSidebarBtn = page.locator('#closeSidebarBtn');
+    await closeSidebarBtn.click();
+    await page.waitForTimeout(400);
+
+    const isSidebarClosed = await page.locator('#appSidebar').evaluate(el => !el.classList.contains('mobile-open'));
+    console.log(`[PASS] Close button clicked -> mobile drawer closed: ${isSidebarClosed}`);
+
+    // -------------------------------------------------------------
+    // TEST 5.2: AMOLED Settings Modal & Theme Switcher
+    // -------------------------------------------------------------
+    console.log('\n--- 5.2 Testing AMOLED Settings Modal & Theme Switcher ---');
+    const settingsBtn = page.locator('#settingsBtn');
+    await settingsBtn.click();
+    await page.waitForTimeout(400);
+
+    const isSettingsVisible = await page.locator('#settingsModal').isVisible();
+    console.log(`[PASS] Settings clicked -> AMOLED modal visible: ${isSettingsVisible}`);
+
+    // Switch to Light Theme
+    console.log('Switching to Light theme...');
+    await page.locator('#themeLightBtn').click();
+    await page.waitForTimeout(300);
+    let currentTheme = await page.evaluate(() => document.body.className);
+    console.log(`[PASS] Body class after light theme: "${currentTheme}"`);
+
+    // Switch to Dark Theme
+    console.log('Switching to Dark theme...');
+    await page.locator('#themeDarkBtn').click();
+    await page.waitForTimeout(300);
+    currentTheme = await page.evaluate(() => document.body.className);
+    console.log(`[PASS] Body class after dark theme: "${currentTheme}"`);
+
+    // Switch to AMOLED Black Theme
+    console.log('Switching to AMOLED Black theme...');
+    await page.locator('#themeAmoledBtn').click();
+    await page.waitForTimeout(300);
+    currentTheme = await page.evaluate(() => document.body.className);
+    console.log(`[PASS] Body class after AMOLED black theme: "${currentTheme}"`);
+
+    const screenshotSettings = '05b_android_settings_amoled.png';
+    const screenshotSettingsPath = path.join(screenshotsDir, screenshotSettings);
+    await page.screenshot({ path: screenshotSettingsPath, fullPage: false });
+    console.log(`[SAVED] Screenshot: ${screenshotSettingsPath}`);
+
+    // Close settings modal
+    await page.locator('#closeSettingsModalBtn').click();
+    await page.waitForTimeout(300);
+
     await androidContext.close();
 
     // -------------------------------------------------------------

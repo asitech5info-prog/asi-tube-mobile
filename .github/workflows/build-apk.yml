@@ -56,20 +56,22 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
       with:
-        tag_name: v1.2.0
-        name: "asi tube mobile v1.2.0 - Landscape Rotation & Live YouTube Search"
+        tag_name: v1.3.0
+        name: "asi tube mobile v1.3.0 - YouTube API v3, AMOLED Themes, PiP & Mobile Drawer"
         body: |
-          ## 🎬 asi tube mobile v1.2.0 (Official Update)
+          ## 🎬 asi tube mobile v1.3.0 (Official Update)
           Official updated Android release for **asi tube mobile**!
 
           ### 📲 Download APK:
           Download `asi-tube-mobile.apk` (or `asi-tube-v1.0.apk`) below and install it directly on your Android device.
 
-          ### ✨ Updates & Fixes in v1.2.0:
-          - 🔄 **Forced Landscape Fullscreen**: Tapping fullscreen or the dedicated rotate button forces phone into horizontal landscape mode, automatically restoring portrait on exit or back button.
-          - 🔍 **Universal YouTube & Creator Search**: Search for any YouTuber (e.g. *Ducky Bhai*, *MrBeast*, *MKBHD*) or video topic with live channel banners and real YouTube video results.
-          - ⚡ **Real-Time YouTube RSS Sync**: Subscriptions automatically pull live uploads directly from YouTube creator feeds with zero external backend requirements.
-          - 📱 **AMOLED Dark Theater Mode**: Seamless fullscreen viewing with zero ads.
+          ### ✨ What's New in v1.3.0:
+          - 🔑 **Google Cloud YouTube Data API v3 Integration**: Live YouTube popular feeds and universal search for any creator or topic using official Google Cloud YouTube Data API v3.
+          - 📱 **Chronological Subscriptions Feed**: Videos from subscribed creators appear sequentially with newest uploads strictly on top, exactly like official YouTube.
+          - 🖤 **True AMOLED Black Settings Modal & Theme Switcher**: Dedicated themes option in settings with **AMOLED Black** (#000000), **Dark Theme** (#181818), and **White / Light** (#ffffff), persisted in local storage.
+          - ☰ **Working Mobile Hamburger Drawer**: Sliding left navigation drawer with dim backdrop and quick navigation.
+          - 🖼️ **Picture-in-Picture (PiP) & Background Play**: Dedicated floating PiP window support on minimize or via player button, plus background audio playback when screen is locked or switching apps.
+          - 🔄 **Forced Landscape Fullscreen**: One-click rotation into sensor landscape with auto-portrait restore.
         files: release-artifacts/*.apk
         draft: false
         prerelease: false

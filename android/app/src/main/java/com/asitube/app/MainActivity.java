@@ -1,12 +1,14 @@
 package com.asitube.app;
 
 import android.annotation.SuppressLint;
+import android.app.PictureInPictureParams;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Rational;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -37,6 +39,10 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout fullscreenContainer;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
+
+    private boolean isBackgroundPlayEnabled = true;
+    private boolean isPipEnabled = true;
+    private boolean isVideoPlaying = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -127,11 +133,63 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setBackgroundColor(Color.parseColor("#0f0f0f"));
 
-        // Register Android Javascript Interface for orientation & native network calls
+        // Register Android Javascript Interface for orientation, PiP & native network calls
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
         // Load AsiTube through secure virtual domain
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+    }
+
+    public void enterPipMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                Rational aspectRatio = new Rational(16, 9);
+                PictureInPictureParams params = new PictureInPictureParams.Builder()
+                    .setAspectRatio(aspectRatio)
+                    .build();
+                enterPictureInPictureMode(params);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (isPipEnabled && isVideoPlaying) {
+            enterPipMode();
+        }
+    }
+
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+        if (webView != null) {
+            webView.evaluateJavascript(
+                "(function() { if (typeof window.onPipModeChanged === 'function') { window.onPipModeChanged(" + isInPictureInPictureMode + "); } })()",
+                null
+            );
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // If background play is NOT enabled, pause webview
+        if (!isBackgroundPlayEnabled) {
+            if (webView != null) {
+                webView.onPause();
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+        }
     }
 
     private void showCustomViewInternal(View view, WebChromeClient.CustomViewCallback callback) {
@@ -235,6 +293,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void enterPiP() {
+            runOnUiThread(() -> enterPipMode());
+        }
+
+        @JavascriptInterface
+        public void setBackgroundPlayEnabled(boolean enabled) {
+            isBackgroundPlayEnabled = enabled;
+        }
+
+        @JavascriptInterface
+        public void setPipEnabled(boolean enabled) {
+            isPipEnabled = enabled;
+        }
+
+        @JavascriptInterface
+        public void setVideoPlaying(boolean playing) {
+            isVideoPlaying = playing;
+        }
+
+        @JavascriptInterface
         public String fetchUrl(String targetUrl) {
             return executeNativeGet(targetUrl);
         }
@@ -255,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
             conn.setReadTimeout(8000);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
             conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
-            conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+            conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8");
 
             int code = conn.getResponseCode();
             if (code >= 200 && code < 300) {

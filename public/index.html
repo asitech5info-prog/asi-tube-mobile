@@ -52,7 +52,7 @@
       flex-shrink: 0;
     }
     @media (max-width: 900px) {
-      .app-sidebar {
+      .app-sidebar:not(.mobile-open) {
         display: none !important;
       }
     }
@@ -132,17 +132,30 @@
         </div>
       </div>
 
+      <!-- Settings Button -->
+      <button class="icon-btn settings-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      </button>
+
       <!-- Account Profile Picture with small A in middle -->
-      <div class="user-avatar" id="userProfileBtn" title="Account">
+      <div class="user-avatar" id="userProfileBtn" title="Account & Settings">
         <div class="account-pfp">A</div>
       </div>
     </div>
   </header>
 
   <!-- Layout: Sidebar + Main Content -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <div class="app-layout">
-    <!-- Sidebar / Drawer (Desktop & Tablet) -->
+    <!-- Sidebar / Drawer (Desktop & Tablet & Mobile Drawer) -->
     <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-header-mobile">
+        <div class="brand">
+          <img src="asi-icon.svg" class="brand-logo" alt="asi tube">
+          <span class="brand-title">asi tube</span>
+        </div>
+        <button class="icon-btn" id="closeSidebarBtn" title="Close menu">✕</button>
+      </div>
       <nav class="sidebar-nav">
         <a href="#home" class="nav-item active" data-view="home">
           <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -340,6 +353,11 @@
           <span id="playerRotateText">Landscape</span>
         </button>
 
+        <button class="player-action-btn" id="playerPipBtn" title="Picture in Picture">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z"/></svg>
+          <span>PiP</span>
+        </button>
+
         <button class="player-action-btn" id="playerShareBtn" title="Share video">
           <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
         </button>
@@ -503,6 +521,91 @@
       <div class="create-playlist-row">
         <input type="text" id="newPlaylistInput" placeholder="New playlist title...">
         <button class="btn-create-pl" id="createPlaylistSubmitBtn">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AMOLED Dark Settings Modal -->
+  <div class="modal-backdrop" id="settingsModal" style="display: none;">
+    <div class="modal-content settings-modal-box">
+      <div class="modal-header">
+        <div class="settings-modal-title">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span style="font-size: 18px; font-weight: 700; margin-left: 8px;">Settings</span>
+        </div>
+        <button class="modal-close-btn" id="closeSettingsModalBtn">✕</button>
+      </div>
+
+      <div class="settings-modal-body">
+        <!-- Theme Selection -->
+        <div class="settings-group">
+          <h4 class="settings-group-label">Themes</h4>
+          <p class="settings-group-desc">Choose between AMOLED Black, Dark, or Light themes</p>
+          <div class="theme-options-grid">
+            <div class="theme-card active" data-theme="amoled" id="themeAmoledBtn">
+              <div class="theme-preview theme-preview-amoled">
+                <span class="preview-dot"></span>
+              </div>
+              <div class="theme-name">AMOLED Black</div>
+              <div class="theme-desc">True black (#000000)</div>
+            </div>
+
+            <div class="theme-card" data-theme="dark" id="themeDarkBtn">
+              <div class="theme-preview theme-preview-dark">
+                <span class="preview-dot"></span>
+              </div>
+              <div class="theme-name">Dark Theme</div>
+              <div class="theme-desc">Classic YouTube (#181818)</div>
+            </div>
+
+            <div class="theme-card" data-theme="light" id="themeLightBtn">
+              <div class="theme-preview theme-preview-light">
+                <span class="preview-dot"></span>
+              </div>
+              <div class="theme-name">White / Light</div>
+              <div class="theme-desc">Bright theme (#ffffff)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playback & Multitasking -->
+        <div class="settings-group">
+          <h4 class="settings-group-label">Playback & Multitasking</h4>
+          
+          <div class="settings-toggle-row">
+            <div>
+              <div class="setting-title">Background Audio Playback</div>
+              <div class="setting-desc">Keep playing sound when switching apps or locking screen</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="bgPlayToggle" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="settings-toggle-row">
+            <div>
+              <div class="setting-title">Picture-in-Picture (PiP)</div>
+              <div class="setting-desc">Auto floating window when pressing Home or minimizing</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="pipToggle" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- YouTube Data API v3 Status -->
+        <div class="settings-group">
+          <h4 class="settings-group-label">YouTube Data API v3</h4>
+          <div class="api-status-box">
+            <div class="api-status-indicator">
+              <span class="status-dot-active"></span>
+              <span>Google Cloud YouTube API Active</span>
+            </div>
+            <div class="api-status-key">Key: AIzaSyD60ySf...NoXW0</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

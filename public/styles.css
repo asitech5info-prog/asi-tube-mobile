@@ -2058,3 +2058,378 @@ body {
   animation: slideUp 0.3s ease;
 }
 
+/* ==========================================================
+   THEME STYLES (AMOLED BLACK, DARK, LIGHT)
+   ========================================================== */
+body.theme-amoled {
+  --yt-black: #000000 !important;
+  --yt-surface: #111111 !important;
+  --yt-surface-hover: #1c1c1c !important;
+  --yt-border: #222222 !important;
+  --yt-text-primary: #ffffff !important;
+  --yt-text-secondary: #aaaaaa !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.theme-dark {
+  --yt-black: #181818 !important;
+  --yt-surface: #212121 !important;
+  --yt-surface-hover: #303030 !important;
+  --yt-border: #333333 !important;
+  --yt-text-primary: #f1f1f1 !important;
+  --yt-text-secondary: #aaaaaa !important;
+  background-color: #181818 !important;
+  color: #f1f1f1 !important;
+}
+
+body.theme-light {
+  --yt-black: #ffffff !important;
+  --yt-surface: #f2f2f2 !important;
+  --yt-surface-hover: #e5e5e5 !important;
+  --yt-border: #e0e0e0 !important;
+  --yt-text-primary: #0f0f0f !important;
+  --yt-text-secondary: #606060 !important;
+  background-color: #ffffff !important;
+  color: #0f0f0f !important;
+}
+
+body.theme-light .app-header {
+  background-color: #ffffff !important;
+  border-bottom-color: #e5e5e5 !important;
+}
+
+body.theme-light .search-container {
+  background-color: #f2f2f2 !important;
+  border-color: #ccc !important;
+}
+
+body.theme-light .search-input {
+  color: #0f0f0f !important;
+}
+
+body.theme-light .app-sidebar, body.theme-light .bottom-nav {
+  background-color: #ffffff !important;
+  border-color: #e5e5e5 !important;
+}
+
+body.theme-light .nav-item, body.theme-light .bnav-item {
+  color: #606060 !important;
+}
+
+body.theme-light .nav-item.active, body.theme-light .bnav-item.active {
+  color: #0f0f0f !important;
+}
+
+body.theme-light .pill {
+  background-color: #f2f2f2 !important;
+  color: #0f0f0f !important;
+  border-color: #e0e0e0 !important;
+}
+
+body.theme-light .pill.active {
+  background-color: #0f0f0f !important;
+  color: #ffffff !important;
+}
+
+body.theme-light .video-card-title {
+  color: #0f0f0f !important;
+}
+
+body.theme-light .modal-content {
+  background-color: #ffffff !important;
+  color: #0f0f0f !important;
+  border-color: #ddd !important;
+}
+
+/* ==========================================================
+   MOBILE HAMBURGER DRAWER & BACKDROP
+   ========================================================== */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 2400;
+  transition: opacity 0.3s;
+}
+
+.sidebar-backdrop.active {
+  display: block;
+}
+
+.sidebar-header-mobile {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--yt-border);
+}
+
+@media (max-width: 900px) {
+  .app-sidebar.mobile-open {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 290px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    background-color: var(--yt-black) !important;
+    z-index: 2500 !important;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.8) !important;
+    overflow-y: auto !important;
+    animation: slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .app-sidebar.mobile-open .sidebar-header-mobile {
+    display: flex !important;
+  }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* ==========================================================
+   AMOLED SETTINGS MODAL
+   ========================================================== */
+.settings-modal-box {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #222222 !important;
+  border-radius: 18px !important;
+  max-width: 520px !important;
+  width: 92% !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95) !important;
+}
+
+.settings-modal-title {
+  display: flex;
+  align-items: center;
+  color: #fff;
+}
+
+.settings-group {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.settings-group-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.settings-group-desc {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 14px;
+}
+
+.theme-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.theme-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.theme-card.active {
+  border-color: #ff0000 !important;
+  background: rgba(255, 0, 0, 0.08) !important;
+}
+
+.theme-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  margin: 0 auto 8px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-preview-amoled {
+  background: #000000;
+}
+
+.theme-preview-dark {
+  background: #212121;
+}
+
+.theme-preview-light {
+  background: #ffffff;
+}
+
+.theme-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.theme-desc {
+  font-size: 10px;
+  color: #888;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.setting-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.setting-desc {
+  font-size: 12px;
+  color: #888;
+  max-width: 320px;
+}
+
+/* Switch Toggle Styling */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #383838;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #ff0000;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.api-status-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.api-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4ade80;
+}
+
+.status-dot-active {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.api-status-key {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+}
+
+/* ==========================================================
+   Picture-in-Picture (PiP) Active Mode UI
+   ========================================================== */
+.player-overlay.pip-active {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #000000 !important;
+  overflow: hidden !important;
+  z-index: 2147483647 !important;
+}
+
+.player-overlay.pip-active .player-top-bar,
+.player-overlay.pip-active .player-body,
+.player-overlay.pip-active .resume-toast {
+  display: none !important;
+}
+
+.player-overlay.pip-active .player-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: 100vw !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+.player-overlay.pip-active .video-frame-wrapper {
+  border-radius: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  aspect-ratio: auto !important;
+}
+
+
